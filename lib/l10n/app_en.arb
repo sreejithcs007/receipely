@@ -1,0 +1,74 @@
+{
+  "appTitle": "Recipely",
+  "@appTitle": {
+    "description": "The name of the app shown in the header"
+  },
+
+  "splashTagline": "Cook. Love. Share.",
+  "@splashTagline": {
+    "description": "Tagline shown on the splash screen"
+  },
+
+  "onboarding1Title": "Discover Thousands of Recipes",
+  "@onboarding1Title": {},
+
+  "onboarding2Title": "AI-Powered Recommendations",
+  "@onboarding2Title": {},
+
+  "onboarding3Title": "Save Favorites & Plan Meals",
+  "@onboarding3Title": {},
+
+  "loginTitle": "Welcome Back",
+  "@loginTitle": {},
+
+  "signUpTitle": "Create Account",
+  "@signUpTitle": {},
+
+  "emailHint": "Email Address",
+  "@emailHint": {},
+
+  "passwordHint": "Password",
+  "@passwordHint": {},
+
+  "signIn": "Sign In",
+  "@signIn": {},
+
+  "createAccount": "Create Account",
+  "@createAccount": {},
+
+  "homeGreeting": "Good Morning, {name}",
+  "@homeGreeting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+
+  "startCooking": "Start Cooking",
+  "@startCooking": {},
+
+  "trendingRecipes": "Trending Recipes",
+  "@trendingRecipes": {},
+
+  "addToFavorites": "Add to Favorites",
+  "@addToFavorites": {},
+
+  "generateRecipe": "Generate Recipe",
+  "@generateRecipe": {},
+
+  "mealPlannerTitle": "Meal Planner",
+  "@mealPlannerTitle": {},
+
+  "shoppingListTitle": "Shopping List",
+  "@shoppingListTitle": {},
+
+  "searchPlaceholder": "Search for recipes, ingredients...",
+  "@searchPlaceholder": {},
+
+  "aiGeneratorTitle": "AI Recipe Generator",
+  "@aiGeneratorTitle": {},
+
+  "profileTitle": "My Profile",
+  "@profileTitle": {}
+}
