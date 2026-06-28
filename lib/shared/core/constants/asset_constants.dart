@@ -3,6 +3,7 @@ class AppImages {
 
   // Splash
   static const String splashLogo = 'assets/images/splash/splash_logo.png';
+  static const String splashBg   = 'assets/images/splash/splash_bg.png';
 
   // Onboarding
   static const String onboardingDiscover = 'assets/images/onboarding/onboarding_discover.png';
@@ -30,4 +31,7 @@ class AppImages {
 
   // Avatars
   static const String chefAvatar = 'assets/images/avatars/chef_avatar.png';
+
+  // Auth
+  static const String loginFood = 'assets/images/auth/login_food.png';
 }

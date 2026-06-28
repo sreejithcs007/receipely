@@ -1,9 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:receipe_flutter/shared/core/constants/asset_constants.dart';
 import '../../../../router/routes.dart';
-import '../../../../shared/core/constants/asset_constants.dart';
-import '../../../../shared/core/constants/dimensions.dart';
-import '../../../../shared/utils/extension/context_extension.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -12,90 +11,77 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-
+class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    );
-    _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
-
-    _controller.forward();
-
-    Timer(const Duration(milliseconds: 2500), () {
-      if (mounted) {
-        const OnboardingRoute().go(context);
-      }
+    // Auto-navigate to onboarding after 3 seconds
+    Timer(const Duration(seconds: 3), () {
+      if (mounted) const OnboardingRoute().go(context);
     });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [context.primary.c50, context.white.c50],
-          ),
-        ),
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(Dimensions.space24),
-                  decoration: BoxDecoration(
-                    color: context.primary.c500,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: context.primary.c500.withValues(alpha: 0.3),
-                        blurRadius: 24.0,
-                        offset: const Offset(0, 12),
-                      ),
-                    ],
-                  ),
-                  child: Image.asset(
-                    AppImages.splashLogo,
-                    width: 64.0,
-                    height: 64.0,
-                    color: context.white.c50,
+      body: SizedBox.expand(
+        child: Stack(
+          children: [
+            /// Background
+            Positioned.fill(
+              child: Image.asset(
+                AppImages.splashBg,
+                fit: BoxFit.cover,
+                // Gradient fallback until the file is present
+                errorBuilder: (_, __, ___) => Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xFFFAEFE0),
+                        Color(0xFFF5E3C8),
+                        Color(0xFFEDD5B0),
+                      ],
+                    ),
                   ),
                 ),
-                Dimensions.v24,
-                Text(
-                  context.l10n.appTitle,
-                  style: context.typography.displayMd.bold.copyWith(
-                    color: context.grey.c900,
-                    letterSpacing: -1.0,
-                  ),
-                ),
-                Dimensions.v8,
-                Text(
-                  context.l10n.splashTagline,
-                  style: context.typography.textLg.medium.copyWith(
-                    color: context.primary.c500,
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+
+            /// Text overlay
+            SafeArea(
+              child: Align(
+                alignment: const Alignment(0, 0.45),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Recipely",
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 52,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF3A2818),
+                        letterSpacing: -.5,
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    Text(
+                      "Delicious recipes, made simple",
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFFF28C28),
+                        letterSpacing: .2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

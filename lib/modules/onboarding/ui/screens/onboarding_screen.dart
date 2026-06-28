@@ -1,11 +1,80 @@
 import 'package:flutter/material.dart';
 import '../../../../router/routes.dart';
 import '../../../../shared/core/constants/asset_constants.dart';
-import '../../../../shared/core/constants/dimensions.dart';
-import '../../../../shared/widgets/buttons/primary_button.dart';
-import '../../../../shared/widgets/buttons/secondary_button.dart';
-import '../../../../shared/utils/extension/context_extension.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Per-slide theme data
+// ─────────────────────────────────────────────────────────────────────────────
+class _SlideTheme {
+  final Color bg;
+  final Color textTitle;
+  final Color btnBg;
+  final Color btnText;
+  final Color dotActive;
+  final Color dotInactive;
+
+  const _SlideTheme({
+    required this.bg,
+    required this.textTitle,
+    required this.btnBg,
+    required this.btnText,
+    required this.dotActive,
+    required this.dotInactive,
+  });
+}
+
+const _slide1 = _SlideTheme(
+  // Screenshot 02 – cream/warm white
+  bg: Color(0xFFFAF3E8),
+  textTitle: Color(0xFF1E1208),
+  btnBg: Color(0xFFF47B20),
+  btnText: Color(0xFFFFFFFF),
+  dotActive: Color(0xFFF47B20),
+  dotInactive: Color(0xFFDDC9A8),
+);
+
+const _slide2 = _SlideTheme(
+  // Screenshot 03 – sage green tint
+  bg: Color(0xFFF0F5EC),
+  textTitle: Color(0xFF1B4332),
+  btnBg: Color(0xFF1B4332),
+  btnText: Color(0xFFFFFFFF),
+  dotActive: Color(0xFF1B4332),
+  dotInactive: Color(0xFFBED4B8),
+);
+
+const _slide3 = _SlideTheme(
+  // Screenshot 04 – warm pink/blush
+  bg: Color(0xFFFBEFE8),
+  textTitle: Color(0xFF1E1208),
+  btnBg: Color(0xFFD63838),
+  btnText: Color(0xFFFFFFFF),
+  dotActive: Color(0xFFD63838),
+  dotInactive: Color(0xFFEDC5B5),
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Slide model
+// ─────────────────────────────────────────────────────────────────────────────
+class _SlideData {
+  final String title;
+  final String subtitle;
+  final String imagePath;
+  final String buttonLabel;
+  final _SlideTheme theme;
+
+  const _SlideData({
+    required this.title,
+    required this.subtitle,
+    required this.imagePath,
+    required this.buttonLabel,
+    required this.theme,
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Screen
+// ─────────────────────────────────────────────────────────────────────────────
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -13,47 +82,59 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends State<OnboardingScreen>
+    with SingleTickerProviderStateMixin {
   final PageController _pageController = PageController();
+  late AnimationController _bgController;
   int _currentPage = 0;
 
-  final List<OnboardingSlideData> _slides = [
-    OnboardingSlideData(
-      titleKey: (context) => context.l10n.onboarding1Title,
-      description: 'Search from thousands of user-reviewed recipes and chef picks with custom nutrition stats.',
+  static const _slides = [
+    _SlideData(
+      title: 'Discover\nDelicious Recipes',
+      subtitle:
+          'Explore a world of tasty recipes\nand cook your favorites with ease.',
       imagePath: AppImages.onboardingDiscover,
-      colorBuilder: (context) => context.primary.c500,
+      buttonLabel: 'Next',
+      theme: _slide1,
     ),
-    OnboardingSlideData(
-      titleKey: (context) => context.l10n.onboarding2Title,
-      description: 'Input ingredients from your pantry and let our AI suggest creative chef-level recipes.',
+    _SlideData(
+      title: 'Smart AI\nRecommendations',
+      subtitle: 'Get personalized recipe ideas\nyou\'ll love, every time.',
       imagePath: AppImages.onboardingAi,
-      colorBuilder: (context) => context.secondary.c500,
+      buttonLabel: 'Next',
+      theme: _slide2,
     ),
-    OnboardingSlideData(
-      titleKey: (context) => context.l10n.onboarding3Title,
-      description: 'Easily set up your weekly planner slots and sync lists for grocery shopping in realtime.',
+    _SlideData(
+      title: 'Save Favorites\n& Plan Meals',
+      subtitle: 'Bookmark recipes you love and\nplan your meals with ease.',
       imagePath: AppImages.onboardingPlan,
-      colorBuilder: (context) => Colors.amber,
+      buttonLabel: 'Get Started',
+      theme: _slide3,
     ),
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _bgController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
+    _bgController.dispose();
     super.dispose();
   }
 
-  void _onPageChanged(int page) {
-    setState(() {
-      _currentPage = page;
-    });
-  }
+  void _onPageChanged(int page) => setState(() => _currentPage = page);
 
-  void _nextPage() {
+  void _next() {
     if (_currentPage < _slides.length - 1) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 350),
         curve: Curves.easeInOut,
       );
     } else {
@@ -63,155 +144,251 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.white.c50,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: Dimensions.space16,
-                vertical: Dimensions.space12,
-              ),
-              child: Align(
+    final theme = _slides[_currentPage].theme;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 350),
+      color: theme.bg,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // ── Skip button ──────────────────────────────────────────
+              Align(
                 alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => const LoginRoute().go(context),
-                  child: Text(
-                    'Skip',
-                    style: context.typography.textMd.medium.copyWith(
-                      color: context.grey.c500,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            // Page View
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                onPageChanged: _onPageChanged,
-                itemCount: _slides.length,
-                itemBuilder: (context, index) {
-                  final slide = _slides[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: Dimensions.space24,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Onboarding Graphic
-                        Container(
-                          width: 240.0,
-                          height: 240.0,
-                          decoration: BoxDecoration(
-                            color: slide.colorBuilder(context).withValues(alpha: 0.08),
-                            shape: BoxShape.circle,
-                          ),
-                          padding: const EdgeInsets.all(Dimensions.space24),
-                          child: Image.asset(
-                            slide.imagePath,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                        const SizedBox(height: Dimensions.space40),
-                        Text(
-                          slide.titleKey(context),
-                          textAlign: TextAlign.center,
-                          style: context.typography.displayXs.bold.copyWith(
-                            color: context.grey.c900,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const SizedBox(height: Dimensions.space16),
-                        Text(
-                          slide.description,
-                          textAlign: TextAlign.center,
-                          style: context.typography.textMd.regular.copyWith(
-                            color: context.grey.c500,
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-            // Page Indicator Dots
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                _slides.length,
-                (index) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                  height: 8.0,
-                  width: _currentPage == index ? 24.0 : 8.0,
-                  decoration: BoxDecoration(
-                    color:
-                        _currentPage == index
-                            ? context.primary.c500
-                            : context.grey.c300,
-                    borderRadius: BorderRadius.circular(Dimensions.radiusFull),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: Dimensions.space40),
-            // Action buttons
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: Dimensions.space24,
-                vertical: Dimensions.space32,
-              ),
-              child: Row(
-                children: [
-                  if (_currentPage > 0) ...[
-                    Expanded(
-                      child: SecondaryButton(
-                        label: 'Back',
-                        onPressed: () {
-                          _pageController.previousPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        },
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 20, top: 8),
+                  child: TextButton(
+                    onPressed: () => const LoginRoute().go(context),
+                    child: Text(
+                      'Skip',
+                      style: TextStyle(
+                        color: theme.textTitle.withValues(alpha: 0.45),
+                        // fontSize: 15,
+                        // fontWeight: FontWeight.w500,
+                        fontFamily: 'PlusJakartaSans',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        // color: Color(0xFF8A8A8A),
                       ),
                     ),
-                    const SizedBox(width: Dimensions.space16),
-                  ],
-                  Expanded(
-                    child: PrimaryButton(
-                      label:
-                          _currentPage == _slides.length - 1
-                              ? 'Get Started'
-                              : 'Next',
-                      onPressed: _nextPage,
-                    ),
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
+
+              // ── Page content ─────────────────────────────────────────
+              Expanded(
+                child: PageView.builder(
+                  controller: _pageController,
+                  onPageChanged: _onPageChanged,
+                  itemCount: _slides.length,
+                  itemBuilder: (_, i) => _SlidePage(slide: _slides[i]),
+                ),
+              ),
+
+              // ── Dots ─────────────────────────────────────────────────
+              _DotsIndicator(
+                count: _slides.length,
+                current: _currentPage,
+                activeColor: theme.dotActive,
+                inactiveColor: theme.dotInactive,
+              ),
+              const SizedBox(height: 28),
+
+              // ── CTA button ───────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: _OnboardingButton(
+                  label: _slides[_currentPage].buttonLabel,
+                  isLast: _currentPage == _slides.length - 1,
+                  bgColor: theme.btnBg,
+                  textColor: theme.btnText,
+                  onPressed: _next,
+                ),
+              ),
+              const SizedBox(height: 36),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class OnboardingSlideData {
-  final String Function(BuildContext) titleKey;
-  final String description;
-  final String imagePath;
-  final Color Function(BuildContext) colorBuilder;
+// ─────────────────────────────────────────────────────────────────────────────
+// Individual slide page
+// ─────────────────────────────────────────────────────────────────────────────
+class _SlidePage extends StatelessWidget {
+  final _SlideData slide;
+  const _SlidePage({required this.slide});
 
-  OnboardingSlideData({
-    required this.titleKey,
-    required this.description,
-    required this.imagePath,
-    required this.colorBuilder,
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+
+          // Illustration area – fills most of the card
+          Expanded(
+            flex: 6,
+            child: Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: slide.theme.textTitle.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(32),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Image.asset(
+                slide.imagePath,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => Center(
+                  child: Icon(
+                    Icons.restaurant_menu,
+                    size: 96,
+                    color: slide.theme.textTitle.withValues(alpha: 0.2),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Text block
+          Expanded(
+            flex: 4,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  slide.title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    // fontSize: 30,
+                    // fontWeight: FontWeight.w800,
+                    // color: slide.theme.textTitle,
+                    // height: 1.20,
+                    // letterSpacing: -0.3,
+                    // fontStyle:
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 34,
+                    fontWeight: FontWeight.w800,
+                    height: 1.15,
+                    letterSpacing: -0.5,
+                    color: slide.theme.textTitle,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  slide.subtitle,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    // fontSize: 14.5,
+                    // fontWeight: FontWeight.w400,
+                    // color: slide.theme.textTitle.withValues(alpha: 0.55),
+                    // height: 1.55,
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    height: 1.6,
+                    // color: Color(0xFF7B7B7B),
+                    color: slide.theme.textTitle.withValues(alpha: 0.55),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dot indicator
+// ─────────────────────────────────────────────────────────────────────────────
+class _DotsIndicator extends StatelessWidget {
+  final int count, current;
+  final Color activeColor, inactiveColor;
+  const _DotsIndicator({
+    required this.count,
+    required this.current,
+    required this.activeColor,
+    required this.inactiveColor,
   });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(count, (i) {
+        final isActive = i == current;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          width: isActive ? 22 : 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: isActive ? activeColor : inactiveColor,
+            borderRadius: BorderRadius.circular(999),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CTA button
+// ─────────────────────────────────────────────────────────────────────────────
+class _OnboardingButton extends StatelessWidget {
+  final String label;
+  final bool isLast;
+  final Color bgColor, textColor;
+  final VoidCallback onPressed;
+  const _OnboardingButton({
+    required this.label,
+    required this.isLast,
+    required this.bgColor,
+    required this.textColor,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: bgColor,
+          foregroundColor: textColor,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+              ),
+            ),
+            if (isLast) ...[
+              const SizedBox(width: 8),
+              const Icon(Icons.arrow_forward, size: 18),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }

@@ -104,6 +104,7 @@ flutter:
     - assets/images/avatars/
     - assets/images/backgrounds/
     - assets/images/splash/
+    - assets/images/auth/
     - assets/icons/
     - assets/icons/navigation/
     - assets/icons/actions/
