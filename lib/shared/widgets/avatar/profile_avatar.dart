@@ -38,33 +38,43 @@ class ProfileAvatar extends StatelessWidget {
     );
 
     if (imageUrl != null && imageUrl!.isNotEmpty) {
-      avatarChild = CachedNetworkImage(
-        imageUrl: imageUrl!,
-        imageBuilder:
-            (context, imageProvider) => Container(
+      avatarChild = imageUrl!.startsWith('http')
+          ? CachedNetworkImage(
+              imageUrl: imageUrl!,
+              imageBuilder:
+                  (context, imageProvider) => Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      image: DecorationImage(
+                        image: imageProvider,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+              placeholder:
+                  (context, url) => Center(
+                    child: SizedBox(
+                      width: radius * 0.8,
+                      height: radius * 0.8,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.0,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          context.primary.c500,
+                        ),
+                      ),
+                    ),
+                  ),
+              errorWidget: (context, url, error) => avatarChild,
+            )
+          : Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 image: DecorationImage(
-                  image: imageProvider,
+                  image: AssetImage(imageUrl!),
                   fit: BoxFit.cover,
                 ),
               ),
-            ),
-        placeholder:
-            (context, url) => Center(
-              child: SizedBox(
-                width: radius * 0.8,
-                height: radius * 0.8,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.0,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    context.primary.c500,
-                  ),
-                ),
-              ),
-            ),
-        errorWidget: (context, url, error) => avatarChild,
-      );
+            );
     }
 
     return GestureDetector(

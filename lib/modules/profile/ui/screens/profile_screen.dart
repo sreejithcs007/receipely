@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../router/routes.dart';
+import '../../../../shared/core/constants/asset_constants.dart';
 import '../../../../shared/core/constants/dimensions.dart';
 import '../../../../shared/widgets/app_bar/app_appbar.dart';
 import '../../../../shared/widgets/avatar/profile_avatar.dart';
@@ -30,8 +31,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // User Header Profile info
             const ProfileAvatar(
               name: 'Chef John',
-              imageUrl:
-                  'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?q=80&w=200',
+              imageUrl: AppImages.chefAvatar,
               radius: 48.0,
             ),
             const SizedBox(height: Dimensions.space16),

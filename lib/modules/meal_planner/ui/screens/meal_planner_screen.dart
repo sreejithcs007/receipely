@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../shared/core/constants/asset_constants.dart';
 import '../../../../shared/core/constants/dimensions.dart';
 import '../../../../shared/widgets/app_bar/app_appbar.dart';
 import '../../../../shared/utils/extension/context_extension.dart';
@@ -133,8 +134,7 @@ class _MealPlannerScreenState extends State<MealPlannerScreen> {
               recipeTitle: 'Scrambled Eggs with Avocado',
               cookTime: '10 min',
               calories: '280 kcal',
-              imageUrl:
-                  'https://images.unsplash.com/photo-1525351484163-7529414344d8?q=80&w=200',
+              imageUrl: AppImages.recipeAvocadoToast,
             ),
             const SizedBox(height: Dimensions.space16),
             _buildMealSlotCard(
@@ -142,8 +142,7 @@ class _MealPlannerScreenState extends State<MealPlannerScreen> {
               recipeTitle: 'Mediterranean Quinoa Salad Bowl',
               cookTime: '25 min',
               calories: '450 kcal',
-              imageUrl:
-                  'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=200',
+              imageUrl: AppImages.heroBanner,
             ),
             const SizedBox(height: Dimensions.space16),
             _buildMealSlotCard(
@@ -151,8 +150,7 @@ class _MealPlannerScreenState extends State<MealPlannerScreen> {
               recipeTitle: 'Honey Mustard Salmon Roast',
               cookTime: '30 min',
               calories: '510 kcal',
-              imageUrl:
-                  'https://images.unsplash.com/photo-1467003909585-2f8a72700288?q=80&w=200',
+              imageUrl: AppImages.recipeSalmon,
             ),
           ],
         ),
@@ -178,7 +176,7 @@ class _MealPlannerScreenState extends State<MealPlannerScreen> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(Dimensions.radiusSm),
-            child: Image.network(
+            child: Image.asset(
               imageUrl,
               width: 60.0,
               height: 60.0,

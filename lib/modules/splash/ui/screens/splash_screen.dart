@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../router/routes.dart';
+import '../../../../shared/core/constants/asset_constants.dart';
 import '../../../../shared/core/constants/dimensions.dart';
 import '../../../../shared/utils/extension/context_extension.dart';
 
@@ -70,10 +71,11 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ],
                   ),
-                  child: Icon(
-                    Icons.restaurant_menu,
+                  child: Image.asset(
+                    AppImages.splashLogo,
+                    width: 64.0,
+                    height: 64.0,
                     color: context.white.c50,
-                    size: 64.0,
                   ),
                 ),
                 Dimensions.v24,

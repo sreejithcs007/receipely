@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../shared/core/constants/asset_constants.dart';
 import '../../../../shared/core/constants/dimensions.dart';
 import '../../../../shared/widgets/buttons/primary_button.dart';
 import '../../../../shared/widgets/cards/nutrition_badge.dart';
@@ -61,9 +62,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen>
                 width: double.infinity,
                 decoration: const BoxDecoration(
                   image: DecorationImage(
-                    image: NetworkImage(
-                      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=600',
-                    ),
+                    image: AssetImage(AppImages.heroBanner),
                     fit: BoxFit.cover,
                   ),
                 ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../router/routes.dart';
+import '../../../../shared/core/constants/asset_constants.dart';
 import '../../../../shared/core/constants/dimensions.dart';
 import '../../../../shared/widgets/app_bar/app_appbar.dart';
 import '../../../../shared/widgets/buttons/primary_button.dart';
@@ -208,8 +209,8 @@ class _AiGeneratorScreenState extends State<AiGeneratorScreen> {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(Dimensions.radiusMd),
-                      child: Image.network(
-                        'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=400',
+                      child: Image.asset(
+                        AppImages.heroBanner,
                         height: 140.0,
                         width: double.infinity,
                         fit: BoxFit.cover,

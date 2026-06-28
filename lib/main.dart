@@ -10,7 +10,7 @@ void main() async {
   // Initialize Supabase using env parameters
   await Supabase.initialize(
     url: Env.supabaseUrl,
-    publishableKey: Env.supabaseAnonKey,
+    anonKey: Env.supabaseAnonKey,
   );
 
   // Setup Service Locator (Dependency Injection)

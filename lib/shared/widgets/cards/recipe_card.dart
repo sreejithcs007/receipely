@@ -92,24 +92,29 @@ class _RecipeCardState extends State<RecipeCard>
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(Dimensions.radiusLg),
                         ),
-                        child: CachedNetworkImage(
-                          imageUrl: widget.imageUrl,
-                          fit: BoxFit.cover,
-                          placeholder:
-                              (context, url) => ShimmerCard(
-                                width: widget.width ?? 170.0,
-                                height: widget.height - 80.0,
+                        child: widget.imageUrl.startsWith('http')
+                            ? CachedNetworkImage(
+                                imageUrl: widget.imageUrl,
+                                fit: BoxFit.cover,
+                                placeholder:
+                                    (context, url) => ShimmerCard(
+                                      width: widget.width ?? 170.0,
+                                      height: widget.height - 80.0,
+                                    ),
+                                errorWidget:
+                                    (context, url, error) => Container(
+                                      color: context.grey.c200,
+                                      child: Icon(
+                                        Icons.restaurant_menu,
+                                        color: context.grey.c400,
+                                        size: 32.0,
+                                      ),
+                                    ),
+                              )
+                            : Image.asset(
+                                widget.imageUrl,
+                                fit: BoxFit.cover,
                               ),
-                          errorWidget:
-                              (context, url, error) => Container(
-                                color: context.grey.c200,
-                                child: Icon(
-                                  Icons.restaurant_menu,
-                                  color: context.grey.c400,
-                                  size: 32.0,
-                                ),
-                              ),
-                        ),
                       ),
                     ),
                     // Rating Badge Top-Left

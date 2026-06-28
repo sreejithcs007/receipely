@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../router/routes.dart';
+import '../../../../shared/core/constants/asset_constants.dart';
 import '../../../../shared/core/constants/dimensions.dart';
 import '../../../../shared/widgets/buttons/primary_button.dart';
 import '../../../../shared/widgets/buttons/secondary_button.dart';
@@ -20,19 +21,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     OnboardingSlideData(
       titleKey: (context) => context.l10n.onboarding1Title,
       description: 'Search from thousands of user-reviewed recipes and chef picks with custom nutrition stats.',
-      icon: Icons.search_off_outlined,
+      imagePath: AppImages.onboardingDiscover,
       colorBuilder: (context) => context.primary.c500,
     ),
     OnboardingSlideData(
       titleKey: (context) => context.l10n.onboarding2Title,
       description: 'Input ingredients from your pantry and let our AI suggest creative chef-level recipes.',
-      icon: Icons.auto_awesome_outlined,
+      imagePath: AppImages.onboardingAi,
       colorBuilder: (context) => context.secondary.c500,
     ),
     OnboardingSlideData(
       titleKey: (context) => context.l10n.onboarding3Title,
       description: 'Easily set up your weekly planner slots and sync lists for grocery shopping in realtime.',
-      icon: Icons.calendar_today_outlined,
+      imagePath: AppImages.onboardingPlan,
       colorBuilder: (context) => Colors.amber,
     ),
   ];
@@ -101,18 +102,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Onboarding Graphic Custom Painting/Utensils representation
+                        // Onboarding Graphic
                         Container(
-                          width: 200.0,
-                          height: 200.0,
+                          width: 240.0,
+                          height: 240.0,
                           decoration: BoxDecoration(
-                            color: slide.colorBuilder(context).withValues(alpha: 0.1),
+                            color: slide.colorBuilder(context).withValues(alpha: 0.08),
                             shape: BoxShape.circle,
                           ),
-                          child: Icon(
-                            slide.icon,
-                            size: 80.0,
-                            color: slide.colorBuilder(context),
+                          padding: const EdgeInsets.all(Dimensions.space24),
+                          child: Image.asset(
+                            slide.imagePath,
+                            fit: BoxFit.contain,
                           ),
                         ),
                         const SizedBox(height: Dimensions.space40),
@@ -204,13 +205,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 class OnboardingSlideData {
   final String Function(BuildContext) titleKey;
   final String description;
-  final IconData icon;
+  final String imagePath;
   final Color Function(BuildContext) colorBuilder;
 
   OnboardingSlideData({
     required this.titleKey,
     required this.description,
-    required this.icon,
+    required this.imagePath,
     required this.colorBuilder,
   });
 }

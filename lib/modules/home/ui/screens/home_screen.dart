@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../router/routes.dart';
+import '../../../../shared/core/constants/asset_constants.dart';
 import '../../../../shared/core/constants/dimensions.dart';
 import '../../../../shared/widgets/cards/category_card.dart';
 import '../../../../shared/widgets/cards/recipe_card.dart';
@@ -29,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
     RecipeItem(
       id: 'r1',
       title: 'Spicy Creamy Tonkotsu Ramen',
-      imageUrl: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?q=80&w=600',
+      imageUrl: AppImages.recipeRamen,
       rating: '4.9',
       cookTime: '35 min',
       calories: '650 kcal',
@@ -37,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
     RecipeItem(
       id: 'r2',
       title: 'Avocado Toast with Poached Egg',
-      imageUrl: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?q=80&w=600',
+      imageUrl: AppImages.recipeAvocadoToast,
       rating: '4.7',
       cookTime: '15 min',
       calories: '320 kcal',
@@ -45,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
     RecipeItem(
       id: 'r3',
       title: 'Grilled Salmon with Asparagus',
-      imageUrl: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?q=80&w=600',
+      imageUrl: AppImages.recipeSalmon,
       rating: '4.8',
       cookTime: '25 min',
       calories: '450 kcal',
@@ -90,8 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const Spacer(),
                     ProfileAvatar(
                       name: 'Chef John',
-                      imageUrl:
-                          'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?q=80&w=200',
+                      imageUrl: AppImages.chefAvatar,
                       radius: 26.0,
                       onTap: () => const ProfileRoute().go(context),
                     ),
@@ -181,9 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(Dimensions.radiusLg),
                       image: const DecorationImage(
-                        image: NetworkImage(
-                          'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=600',
-                        ),
+                        image: AssetImage(AppImages.heroBanner),
                         fit: BoxFit.cover,
                       ),
                     ),
