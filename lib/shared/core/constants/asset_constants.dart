@@ -33,5 +33,9 @@ class AppImages {
   static const String chefAvatar = 'assets/images/avatars/chef_avatar.png';
 
   // Auth
-  static const String loginFood = 'assets/images/auth/login_food.png';
+  static const String loginFood  = 'assets/images/auth/login_food.jpg';
+
+  // Social Icons
+  static const String googleIcon = 'assets/icons/social/google.png';
+  static const String appleIcon  = 'assets/icons/social/apple_logo.png';
 }
