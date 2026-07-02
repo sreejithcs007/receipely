@@ -26,6 +26,8 @@ class _HomeScreenState extends State<HomeScreen> {
     CategoryItem(label: 'Beverage', icon: Icons.local_bar),
   ];
 
+
+// DDDD
   final List<RecipeItem> _trendingRecipes = [
     RecipeItem(
       id: 'r1',
