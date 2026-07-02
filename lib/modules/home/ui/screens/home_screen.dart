@@ -27,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
 
-// DDDD
+
   final List<RecipeItem> _trendingRecipes = [
     RecipeItem(
       id: 'r1',
