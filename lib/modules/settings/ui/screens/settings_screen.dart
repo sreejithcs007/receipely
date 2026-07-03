@@ -285,7 +285,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildGroupContainer(List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -295,8 +294,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
-      child: Column(
-        children: children,
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: children,
+        ),
       ),
     );
   }

@@ -365,7 +365,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildActionsCard(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -375,32 +374,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      child: Column(
-        children: [
-          _buildActionItem(
-            icon: Icons.menu_book_rounded,
-            title: 'My Recipes',
-            onTap: () {
-              const ShoppingListRoute().push(context);
-            },
-          ),
-          const Divider(color: Color(0xFFEFEBE4), height: 1),
-          _buildActionItem(
-            icon: Icons.settings_outlined,
-            title: 'Settings',
-            onTap: () {
-              const SettingsRoute().push(context);
-            },
-          ),
-          const Divider(color: Color(0xFFEFEBE4), height: 1),
-          _buildActionItem(
-            icon: Icons.help_outline_rounded,
-            title: 'Help',
-            onTap: () {
-              context.read<ProfileBloc>().add(TriggerHelpCenter());
-            },
-          ),
-        ],
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: [
+            _buildActionItem(
+              icon: Icons.menu_book_rounded,
+              title: 'My Recipes',
+              onTap: () {
+                const ShoppingListRoute().push(context);
+              },
+            ),
+            const Divider(color: Color(0xFFEFEBE4), height: 1),
+            _buildActionItem(
+              icon: Icons.settings_outlined,
+              title: 'Settings',
+              onTap: () {
+                const SettingsRoute().push(context);
+              },
+            ),
+            const Divider(color: Color(0xFFEFEBE4), height: 1),
+            _buildActionItem(
+              icon: Icons.help_outline_rounded,
+              title: 'Help',
+              onTap: () {
+                context.read<ProfileBloc>().add(TriggerHelpCenter());
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
