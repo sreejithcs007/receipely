@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../modules/splash/ui/screens/splash_screen.dart';
 import '../modules/onboarding/ui/screens/onboarding_screen.dart';
@@ -155,25 +156,135 @@ class MainLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final selectedIndex = _calculateSelectedIndex(context);
     return Scaffold(
+      backgroundColor: const Color(0xFFFAF7F2),
       body: child,
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _calculateSelectedIndex(context),
-        onTap: (index) => _onTap(context, index),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
-            label: 'Planner',
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 16,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildNavItem(
+                  context,
+                  index: 0,
+                  icon: Icons.home_filled,
+                  inactiveIcon: Icons.home_outlined,
+                  label: 'Home',
+                  isSelected: selectedIndex == 0,
+                ),
+                _buildNavItem(
+                  context,
+                  index: 1,
+                  icon: Icons.search,
+                  inactiveIcon: Icons.search,
+                  label: 'Search',
+                  isSelected: selectedIndex == 1,
+                ),
+                _buildCenterPlusButton(context),
+                _buildNavItem(
+                  context,
+                  index: 3,
+                  icon: Icons.favorite,
+                  inactiveIcon: Icons.favorite_border,
+                  label: 'Favorites',
+                  isSelected: selectedIndex == 3,
+                ),
+                _buildNavItem(
+                  context,
+                  index: 4,
+                  icon: Icons.person,
+                  inactiveIcon: Icons.person_outline,
+                  label: 'Profile',
+                  isSelected: selectedIndex == 4,
+                ),
+              ],
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite),
-            label: 'Favorites',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(
+    BuildContext context, {
+    required int index,
+    required IconData icon,
+    required IconData inactiveIcon,
+    required String label,
+    required bool isSelected,
+  }) {
+    final themeColor = isSelected ? const Color(0xFFF47B20) : const Color(0xFF8C8A87);
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _onTap(context, index),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isSelected ? icon : inactiveIcon,
+              color: themeColor,
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 10.5,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: themeColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCenterPlusButton(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _onTap(context, 2),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFFF47B20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0x3DF47B20),
+                    blurRadius: 8,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.add,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
