@@ -22,9 +22,26 @@ class UpdateThemeMode extends SettingsEvent {
 }
 
 class SelectSubSection extends SettingsEvent {
-  final String section; // 'main', 'terms', 'privacy', 'about'
+  final String section; // 'main', 'terms', 'privacy', 'about', 'profile_details', 'email_address'
   const SelectSubSection(this.section);
 
   @override
   List<Object?> get props => [section];
+}
+
+class UpdateProfile extends SettingsEvent {
+  final String name;
+  final String title;
+  const UpdateProfile({required this.name, required this.title});
+
+  @override
+  List<Object?> get props => [name, title];
+}
+
+class UpdateEmail extends SettingsEvent {
+  final String email;
+  const UpdateEmail(this.email);
+
+  @override
+  List<Object?> get props => [email];
 }

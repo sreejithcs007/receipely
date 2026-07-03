@@ -14,52 +14,75 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _titleController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => SettingsBloc()..add(LoadSettings()),
-      child: BlocBuilder<SettingsBloc, SettingsState>(
-        builder: (context, state) {
-          final isMain = state.activeSubSection == 'main';
-          final title = _getSectionTitle(state.activeSubSection);
-
-          return Scaffold(
-            backgroundColor: const Color(0xFFFAF7F2), // Canvas
-            appBar: AppBar(
-              backgroundColor: const Color(0xFFFAF7F2),
-              elevation: 0,
-              leading: GestureDetector(
-                onTap: () {
-                  if (isMain) {
-                    Navigator.pop(context);
-                  } else {
-                    context.read<SettingsBloc>().add(const SelectSubSection('main'));
-                  }
-                },
-                child: const Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: Color(0xFF1F1E1C),
-                  size: 20,
-                ),
-              ),
-              title: Text(
-                title,
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF1F1E1C),
-                ),
-              ),
-              centerTitle: true,
-            ),
-            body: SafeArea(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: _buildBody(context, state),
-              ),
-            ),
-          );
+      child: BlocListener<SettingsBloc, SettingsState>(
+        listenWhen: (previous, current) => previous.activeSubSection != current.activeSubSection,
+        listener: (context, state) {
+          if (state.activeSubSection == 'profile_details') {
+            _nameController.text = state.name;
+            _titleController.text = state.title;
+          } else if (state.activeSubSection == 'email_address') {
+            _emailController.text = state.email;
+          }
         },
+        child: BlocBuilder<SettingsBloc, SettingsState>(
+          builder: (context, state) {
+            final isMain = state.activeSubSection == 'main';
+            final title = _getSectionTitle(state.activeSubSection);
+
+            return Scaffold(
+              backgroundColor: const Color(0xFFFAF7F2), // Canvas
+              appBar: AppBar(
+                backgroundColor: const Color(0xFFFAF7F2),
+                elevation: 0,
+                leading: GestureDetector(
+                  onTap: () {
+                    if (isMain) {
+                      Navigator.pop(context);
+                    } else {
+                      context.read<SettingsBloc>().add(const SelectSubSection('main'));
+                    }
+                  },
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: Color(0xFF1F1E1C),
+                    size: 20,
+                  ),
+                ),
+                title: Text(
+                  title,
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF1F1E1C),
+                  ),
+                ),
+                centerTitle: true,
+              ),
+              body: SafeArea(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: _buildBody(context, state),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -72,6 +95,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return 'Data & Privacy';
       case 'about':
         return 'About Recipely';
+      case 'profile_details':
+        return 'Profile Details';
+      case 'email_address':
+        return 'Email Address';
       default:
         return 'Settings';
     }
@@ -85,6 +112,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return _buildPrivacyView();
       case 'about':
         return _buildAboutView();
+      case 'profile_details':
+        return _buildProfileDetailsView(context, state);
+      case 'email_address':
+        return _buildEmailAddressView(context, state);
       default:
         return _buildMainSettings(context, state);
     }
@@ -104,15 +135,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildSettingTile(
               icon: Icons.person_outline_rounded,
               title: 'Profile Details',
-              subtitle: 'Sarah Johnson, Home Chef',
-              onTap: () {},
+              subtitle: '${state.name}, ${state.title}',
+              onTap: () {
+                context.read<SettingsBloc>().add(const SelectSubSection('profile_details'));
+              },
             ),
             const Divider(color: Color(0xFFEFEBE4), height: 1),
             _buildSettingTile(
               icon: Icons.alternate_email_rounded,
               title: 'Email Address',
-              subtitle: 'sarah.j@recipely.com',
-              onTap: () {},
+              subtitle: state.email,
+              onTap: () {
+                context.read<SettingsBloc>().add(const SelectSubSection('email_address'));
+              },
             ),
           ]),
 
@@ -302,41 +337,303 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text(
-            'Select Theme',
-            style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.w700),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                title: Text('System Default', style: GoogleFonts.poppins(fontSize: 14)),
-                onTap: () {
-                  context.read<SettingsBloc>().add(const UpdateThemeMode('system'));
-                  Navigator.pop(dialogContext);
-                },
-              ),
-              ListTile(
-                title: Text('Light Mode', style: GoogleFonts.poppins(fontSize: 14)),
-                onTap: () {
-                  context.read<SettingsBloc>().add(const UpdateThemeMode('light'));
-                  Navigator.pop(dialogContext);
-                },
-              ),
-              ListTile(
-                title: Text('Dark Mode', style: GoogleFonts.poppins(fontSize: 14)),
-                onTap: () {
-                  context.read<SettingsBloc>().add(const UpdateThemeMode('dark'));
-                  Navigator.pop(dialogContext);
-                },
-              ),
-            ],
-          ),
+        return AppThemeDialog(
+          onSelect: (theme) {
+            context.read<SettingsBloc>().add(UpdateThemeMode(theme));
+          },
         );
       },
+    );
+  }
+
+  // ── Profile Details edit sub-view ─────────────────────────────────────────
+  Widget _buildProfileDetailsView(BuildContext context, SettingsState state) {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Stack(
+              children: [
+                Container(
+                  width: 90,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 3.0),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 12,
+                      ),
+                    ],
+                  ),
+                  child: const ClipOval(
+                    child: Icon(
+                      Icons.person_rounded,
+                      color: Color(0xFF8C8A87),
+                      size: 48,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFFF47B20),
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt_outlined,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // Name Input
+          _buildInputLabel('Full Name'),
+          const SizedBox(height: 8),
+          _buildTextField(
+            controller: _nameController,
+            hint: 'Enter your full name',
+            icon: Icons.person_outline_rounded,
+          ),
+          const SizedBox(height: 20),
+
+          // Title Input
+          _buildInputLabel('Job Title / Bio'),
+          const SizedBox(height: 8),
+          _buildTextField(
+            controller: _titleController,
+            hint: 'e.g., Home Chef',
+            icon: Icons.work_outline_rounded,
+          ),
+          const SizedBox(height: 40),
+
+          // Save Changes
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF47B20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+              onPressed: () {
+                context.read<SettingsBloc>().add(UpdateProfile(
+                      name: _nameController.text.trim(),
+                      title: _titleController.text.trim(),
+                    ));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Profile details updated successfully!'),
+                    backgroundColor: Color(0xFFF47B20),
+                  ),
+                );
+              },
+              child: Text(
+                'Save Changes',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Email Address edit sub-view ───────────────────────────────────────────
+  Widget _buildEmailAddressView(BuildContext context, SettingsState state) {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Current Email Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFEFEBE4), width: 1.0),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFFFFF2D9),
+                  ),
+                  child: const Icon(
+                    Icons.alternate_email_rounded,
+                    color: Color(0xFFF47B20),
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Current Email Address',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11.5,
+                        color: const Color(0xFF8C8A87),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      state.email,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14.5,
+                        color: const Color(0xFF1F1E1C),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // New Email Input
+          _buildInputLabel('New Email Address'),
+          const SizedBox(height: 8),
+          _buildTextField(
+            controller: _emailController,
+            hint: 'Enter your new email address',
+            icon: Icons.mail_outline_rounded,
+          ),
+          const SizedBox(height: 40),
+
+          // Update Email button
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF47B20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+              onPressed: () {
+                final email = _emailController.text.trim();
+                if (email.isNotEmpty && email.contains('@')) {
+                  context.read<SettingsBloc>().add(UpdateEmail(email));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Email address updated successfully!'),
+                      backgroundColor: Color(0xFFF47B20),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter a valid email address.'),
+                      backgroundColor: Color(0xFFD32F2F),
+                    ),
+                  );
+                }
+              },
+              child: Text(
+                'Update Email',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInputLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4.0),
+      child: Text(
+        label,
+        style: GoogleFonts.poppins(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFF1F1E1C),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        style: GoogleFonts.poppins(
+          fontSize: 14.5,
+          color: const Color(0xFF1F1E1C),
+          fontWeight: FontWeight.w500,
+        ),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: GoogleFonts.poppins(
+            fontSize: 13.5,
+            color: const Color(0xFFB5B3B0),
+          ),
+          prefixIcon: Icon(icon, color: const Color(0xFF8C8A87), size: 20),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xFFEFEBE4), width: 1.0),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xFFEFEBE4), width: 1.0),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xFFF47B20), width: 1.5),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+      ),
     );
   }
 
@@ -414,7 +711,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Column(
         children: [
           const SizedBox(height: 20),
-          // App Logo Placeholder icon
           Container(
             width: 84,
             height: 84,
@@ -496,6 +792,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
           fontWeight: FontWeight.w400,
           height: 1.45,
         ),
+      ),
+    );
+  }
+}
+
+class AppThemeDialog extends StatelessWidget {
+  final Function(String) onSelect;
+  const AppThemeDialog({required this.onSelect, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Text(
+        'Select Theme',
+        style: GoogleFonts.playfairDisplay(fontSize: 18, fontWeight: FontWeight.w700),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            title: Text('System Default', style: GoogleFonts.poppins(fontSize: 14)),
+            onTap: () {
+              onSelect('system');
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            title: Text('Light Mode', style: GoogleFonts.poppins(fontSize: 14)),
+            onTap: () {
+              onSelect('light');
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            title: Text('Dark Mode', style: GoogleFonts.poppins(fontSize: 14)),
+            onTap: () {
+              onSelect('dark');
+              Navigator.pop(context);
+            },
+          ),
+        ],
       ),
     );
   }

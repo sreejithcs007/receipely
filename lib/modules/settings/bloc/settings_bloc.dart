@@ -9,6 +9,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
           emailNewsletters: false,
           activeTheme: 'system',
           activeSubSection: 'main',
+          name: 'Sarah Johnson',
+          title: 'Home Chef',
+          email: 'sarah.j@recipely.com',
         )) {
     on<LoadSettings>((event, emit) {
       emit(state.copyWith(activeSubSection: 'main'));
@@ -24,6 +27,19 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     });
     on<SelectSubSection>((event, emit) {
       emit(state.copyWith(activeSubSection: event.section));
+    });
+    on<UpdateProfile>((event, emit) {
+      emit(state.copyWith(
+        name: event.name,
+        title: event.title,
+        activeSubSection: 'main',
+      ));
+    });
+    on<UpdateEmail>((event, emit) {
+      emit(state.copyWith(
+        email: event.email,
+        activeSubSection: 'main',
+      ));
     });
   }
 }
