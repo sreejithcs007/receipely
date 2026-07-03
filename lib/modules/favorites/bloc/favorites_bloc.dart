@@ -1,56 +1,16 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../shared/core/constants/asset_constants.dart';
+import '../../../../shared/data/repositories/user_repository.dart';
 import 'favorites_event.dart';
 import 'favorites_state.dart';
 
 class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
-  FavoritesBloc()
+  final UserRepository _userRepository;
+
+  FavoritesBloc(this._userRepository)
       : super(const FavoritesState(
           selectedTabIndex: 0,
-          favorites: [
-            FavoriteRecipeItem(
-              id: 'fav_oatmeal',
-              title: 'Blueberry Banana Oatmeal',
-              imageUrl: AppImages.heroBanner,
-              cookTime: '15 min',
-              difficulty: 'Easy',
-            ),
-            FavoriteRecipeItem(
-              id: 'fav_salmon',
-              title: 'Honey Garlic Salmon',
-              imageUrl: AppImages.heroBanner,
-              cookTime: '25 min',
-              difficulty: 'Medium',
-            ),
-            FavoriteRecipeItem(
-              id: 'fav_pasta',
-              title: 'Creamy Parmesan Pasta',
-              imageUrl: AppImages.heroBanner,
-              cookTime: '20 min',
-              difficulty: 'Easy',
-            ),
-            FavoriteRecipeItem(
-              id: 'fav_tacos',
-              title: 'Ground Beef Tacos',
-              imageUrl: AppImages.heroBanner,
-              cookTime: '20 min',
-              difficulty: 'Easy',
-            ),
-          ],
-          collections: [
-            FavoriteCollectionItem(
-              id: 'col_breakfast',
-              name: 'Breakfast Ideas',
-              recipeCount: 12,
-              badgeHexColor: 0xFFFFF2D9, // light warm yellow
-            ),
-            FavoriteCollectionItem(
-              id: 'col_quick_din',
-              name: 'Quick Dinners',
-              recipeCount: 18,
-              badgeHexColor: 0xFFEAF5E3, // light green
-            ),
-          ],
+          favorites: [],
+          collections: [],
           isLoading: false,
         )) {
     on<LoadFavoritesPage>(_onLoadFavoritesPage);
@@ -59,26 +19,65 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     on<CreateCollection>(_onCreateCollection);
   }
 
-  void _onLoadFavoritesPage(LoadFavoritesPage event, Emitter<FavoritesState> emit) {
-    emit(state.copyWith(isLoading: false));
+  Future<void> _onLoadFavoritesPage(LoadFavoritesPage event, Emitter<FavoritesState> emit) async {
+    emit(state.copyWith(isLoading: true));
+    try {
+      final user = _userRepository.getCurrentUser();
+      if (user != null) {
+        final favorites = await _userRepository.getFavorites(user.id);
+        final favList = favorites.map((r) => FavoriteRecipeItem(
+          id: r.id,
+          title: r.title,
+          imageUrl: r.imageUrl,
+          cookTime: r.cookTime,
+          difficulty: r.difficulty,
+        )).toList();
+
+        final collectionsList = [
+          const FavoriteCollectionItem(
+            id: 'col_breakfast',
+            name: 'Breakfast Ideas',
+            recipeCount: 12,
+            badgeHexColor: 0xFFFFF2D9,
+          ),
+          const FavoriteCollectionItem(
+            id: 'col_quick_din',
+            name: 'Quick Dinners',
+            recipeCount: 18,
+            badgeHexColor: 0xFFEAF5E3,
+          ),
+        ];
+
+        emit(state.copyWith(
+          favorites: favList,
+          collections: collectionsList,
+          isLoading: false,
+        ));
+      } else {
+        emit(state.copyWith(isLoading: false));
+      }
+    } catch (_) {
+      emit(state.copyWith(isLoading: false));
+    }
   }
 
-  void _onToggleFavoriteItemState(ToggleFavoriteItemState event, Emitter<FavoritesState> emit) {
-    final updated = List<FavoriteRecipeItem>.from(state.favorites);
-    final exists = updated.any((r) => r.id == event.recipeId);
-
-    if (exists) {
+  Future<void> _onToggleFavoriteItemState(ToggleFavoriteItemState event, Emitter<FavoritesState> emit) async {
+    final user = _userRepository.getCurrentUser();
+    if (user != null) {
+      final updated = List<FavoriteRecipeItem>.from(state.favorites);
       updated.removeWhere((r) => r.id == event.recipeId);
+      emit(state.copyWith(favorites: updated));
+      try {
+        await _userRepository.removeFavorite(user.id, event.recipeId);
+      } catch (_) {}
     }
-
-    emit(state.copyWith(favorites: updated));
   }
 
   void _onChangeFavoritesTab(ChangeFavoritesTab event, Emitter<FavoritesState> emit) {
     emit(state.copyWith(selectedTabIndex: event.index));
   }
 
-  void _onCreateCollection(CreateCollection event, Emitter<FavoritesState> emit) {
+  Future<void> _onCreateCollection(CreateCollection event, Emitter<FavoritesState> emit) async {
     final updated = List<FavoriteCollectionItem>.from(state.collections)
       ..add(FavoriteCollectionItem(
         id: 'col_${DateTime.now().millisecondsSinceEpoch}',

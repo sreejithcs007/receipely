@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../shared/core/constants/asset_constants.dart';
+import '../../../../shared/di/service_locator.dart';
+import '../../../../shared/data/repositories/recipe_repository.dart';
+import '../../../../shared/data/repositories/user_repository.dart';
 import '../../bloc/recipe_detail_bloc.dart';
 import '../../bloc/recipe_detail_event.dart';
 import '../../bloc/recipe_detail_state.dart';
@@ -17,7 +21,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => RecipeDetailBloc()..add(LoadRecipeDetail(widget.recipeId)),
+      create: (context) => RecipeDetailBloc(
+        getIt<RecipeRepository>(),
+        getIt<UserRepository>(),
+      )..add(LoadRecipeDetail(widget.recipeId)),
       child: BlocBuilder<RecipeDetailBloc, RecipeDetailState>(
         builder: (context, state) {
           return Scaffold(
@@ -111,10 +118,19 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           Positioned.fill(
             child: ClipRRect(
               borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
-              child: Image.asset(
-                state.imageUrl,
-                fit: BoxFit.cover,
-              ),
+              child: state.imageUrl.startsWith('http')
+                  ? Image.network(
+                      state.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Image.asset(
+                        AppImages.recipeRamen,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : Image.asset(
+                      state.imageUrl.isNotEmpty ? state.imageUrl : AppImages.recipeRamen,
+                      fit: BoxFit.cover,
+                    ),
             ),
           ),
           // Dark Top Gradient Overlay for back buttons contrast

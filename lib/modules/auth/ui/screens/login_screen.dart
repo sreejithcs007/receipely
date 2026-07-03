@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../router/routes.dart';
 import '../../../../shared/core/constants/asset_constants.dart';
+import '../../../../shared/di/service_locator.dart';
+import '../../../../shared/data/repositories/user_repository.dart';
 import '../../../../shared/utils/extension/string_extension.dart';
+import '../../bloc/auth_bloc.dart';
+import '../../bloc/auth_event.dart';
+import '../../bloc/auth_state.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,7 +22,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -25,227 +30,246 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() {
+  void _handleLogin(BuildContext context) {
     if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) {
-          setState(() => _isLoading = false);
-          const HomeRoute().go(context);
-        }
-      });
+      context.read<AuthBloc>().add(
+            SignInWithEmailAndPasswordRequested(
+              email: _emailController.text.trim(),
+              password: _passwordController.text,
+            ),
+          );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAF7F2), // premium canvas background
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 10),
-                // ── Floating Organic Blob Food Image ──────────────────────
-                Center(
-                  child: Container(
-                    width: screenWidth * 0.58,
-                    height: screenWidth * 0.48,
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(100),
-                        topRight: Radius.circular(110),
-                        bottomLeft: Radius.circular(90),
-                        bottomRight: Radius.circular(105),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF3A2818).withValues(alpha: 0.06),
-                          blurRadius: 15,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Image.asset(
-                      AppImages.loginFood,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Image.asset(
-                        AppImages.recipeRamen,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 28),
-
-                // ── Welcome Text ──────────────────────────────────────────
-                Text(
-                  'Welcome Back',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 34,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF1F1E1C),
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Sign in to continue discovering\ndelicious food 🧡',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF8C8A87),
-                    height: 1.45,
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-
-                // ── Email Input Field ─────────────────────────────────────
-                _PremiumField(
-                  controller: _emailController,
-                  hintText: 'Email address',
-                  prefixIcon: Icons.mail_outline_rounded,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Email is required';
-                    if (!v.trim().isValidEmail) return 'Enter a valid email';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // ── Password Input Field ──────────────────────────────────
-                _PremiumField(
-                  controller: _passwordController,
-                  hintText: 'Password',
-                  prefixIcon: Icons.lock_outline_rounded,
-                  obscureText: _obscurePassword,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                      color: const Color(0xFF8C8A87),
-                      size: 20,
-                    ),
-                    onPressed: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
-                  ),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Password is required';
-                    if (!v.isValidPassword) return 'Minimum 6 characters';
-                    return null;
-                  },
-                ),
-
-                // ── Forgot Password ───────────────────────────────────────
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 8.0, bottom: 20.0),
-                    child: GestureDetector(
-                      onTap: () {},
-                      child: Text(
-                        'Forgot password?',
-                        style: GoogleFonts.poppins(
-                          color: const Color(0xFFF47B20),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // ── Sign In Button ────────────────────────────────────────
-                _SignInButton(
-                  isLoading: _isLoading,
-                  onPressed: _handleLogin,
-                ),
-
-                const SizedBox(height: 24),
-
-                // ── Divider ───────────────────────────────────────────────
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Divider(color: Color(0xFFEAE5DC), thickness: 1),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Text(
-                        'or continue with',
-                        style: GoogleFonts.poppins(
-                          color: const Color(0xFF8C8A87),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                    const Expanded(
-                      child: Divider(color: Color(0xFFEAE5DC), thickness: 1),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                // ── Social Sign-in Buttons ────────────────────────────────
-                _SocialButton(
-                  label: 'Continue with Google',
-                  icon: Image.asset(AppImages.googleIcon, height: 24,
-                      errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.g_mobiledata, size: 24)),
-                  onPressed: () {},
-                ),
-                const SizedBox(height: 12),
-
-                _SocialButton(
-                  label: 'Continue with Apple',
-                  icon: Image.asset(AppImages.appleIcon, height: 24,
-                      errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.apple, size: 24, color: Color(0xFF1F1E1C))),
-                  onPressed: () {},
-                ),
-
-                const SizedBox(height: 28),
-
-                // ── Sign Up Footer ────────────────────────────────────────
-                GestureDetector(
-                  onTap: () => const SignUpRoute().go(context),
-                  child: RichText(
-                    text: TextSpan(
-                      text: "Don't have an account? ",
-                      style: GoogleFonts.poppins(
-                        color: const Color(0xFF8C8A87),
-                        fontSize: 14,
-                      ),
-                      children: [
-                        TextSpan(
-                          text: 'Sign Up',
-                          style: GoogleFonts.poppins(
-                            color: const Color(0xFFF47B20),
-                            fontWeight: FontWeight.w700,
+    return BlocProvider<AuthBloc>(
+      create: (context) => AuthBloc(getIt<UserRepository>()),
+      child: BlocConsumer<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is AuthFailure) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.error),
+                backgroundColor: const Color(0xFFD32F2F),
+              ),
+            );
+          } else if (state is Authenticated) {
+            const HomeRoute().go(context);
+          }
+        },
+        builder: (context, state) {
+          final isLoading = state is AuthLoading;
+          return Scaffold(
+            backgroundColor: const Color(0xFFFAF7F2), // premium canvas background
+            body: SafeArea(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 10),
+                      // ── Floating Organic Blob Food Image ──────────────────────
+                      Center(
+                        child: Container(
+                          width: screenWidth * 0.58,
+                          height: screenWidth * 0.48,
+                          decoration: BoxDecoration(
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(100),
+                              topRight: Radius.circular(110),
+                              bottomLeft: Radius.circular(90),
+                              bottomRight: Radius.circular(105),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF3A2818).withValues(alpha: 0.06),
+                                blurRadius: 15,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Image.asset(
+                            AppImages.loginFood,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Image.asset(
+                              AppImages.recipeRamen,
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+
+                      const SizedBox(height: 28),
+
+                      // ── Welcome Text ──────────────────────────────────────────
+                      Text(
+                        'Welcome Back',
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1F1E1C),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Sign in to continue discovering\ndelicious food 🧡',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w400,
+                          color: const Color(0xFF8C8A87),
+                          height: 1.45,
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // ── Email Input Field ─────────────────────────────────────
+                      _PremiumField(
+                        controller: _emailController,
+                        hintText: 'Email address',
+                        prefixIcon: Icons.mail_outline_rounded,
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Email is required';
+                          if (!v.trim().isValidEmail) return 'Enter a valid email';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ── Password Input Field ──────────────────────────────────
+                      _PremiumField(
+                        controller: _passwordController,
+                        hintText: 'Password',
+                        prefixIcon: Icons.lock_outline_rounded,
+                        obscureText: _obscurePassword,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            color: const Color(0xFF8C8A87),
+                            size: 20,
+                          ),
+                          onPressed: () =>
+                              setState(() => _obscurePassword = !_obscurePassword),
+                        ),
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return 'Password is required';
+                          if (!v.isValidPassword) return 'Minimum 6 characters';
+                          return null;
+                        },
+                      ),
+
+                      // ── Forgot Password ───────────────────────────────────────
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 8.0, bottom: 20.0),
+                          child: GestureDetector(
+                            onTap: () {},
+                            child: Text(
+                              'Forgot password?',
+                              style: GoogleFonts.poppins(
+                                color: const Color(0xFFF47B20),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // ── Sign In Button ────────────────────────────────────────
+                      _SignInButton(
+                        isLoading: isLoading,
+                        onPressed: () => _handleLogin(context),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // ── Divider ───────────────────────────────────────────────
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Divider(color: Color(0xFFEAE5DC), thickness: 1),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: Text(
+                              'or continue with',
+                              style: GoogleFonts.poppins(
+                                color: const Color(0xFF8C8A87),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                          const Expanded(
+                            child: Divider(color: Color(0xFFEAE5DC), thickness: 1),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // ── Social Sign-in Buttons ────────────────────────────────
+                      _SocialButton(
+                        label: 'Continue with Google',
+                        icon: Image.asset(AppImages.googleIcon, height: 24,
+                            errorBuilder: (_, __, ___) =>
+                                const Icon(Icons.g_mobiledata, size: 24)),
+                        onPressed: () {},
+                      ),
+                      const SizedBox(height: 12),
+
+                      _SocialButton(
+                        label: 'Continue with Apple',
+                        icon: Image.asset(AppImages.appleIcon, height: 24,
+                            errorBuilder: (_, __, ___) =>
+                                const Icon(Icons.apple, size: 24, color: Color(0xFF1F1E1C))),
+                        onPressed: () {},
+                      ),
+
+                      const SizedBox(height: 28),
+
+                      // ── Sign Up Footer ────────────────────────────────────────
+                      GestureDetector(
+                        onTap: () => const SignUpRoute().go(context),
+                        child: RichText(
+                          text: TextSpan(
+                            text: "Don't have an account? ",
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFF8C8A87),
+                              fontSize: 14,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: 'Sign Up',
+                                style: GoogleFonts.poppins(
+                                  color: const Color(0xFFF47B20),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../router/routes.dart';
+import '../../../../shared/core/constants/asset_constants.dart';
+import '../../../../shared/di/service_locator.dart';
+import '../../../../shared/data/repositories/recipe_repository.dart';
+import '../../../../shared/data/repositories/user_repository.dart';
 import '../../bloc/profile_bloc.dart';
 import '../../bloc/profile_event.dart';
 import '../../bloc/profile_state.dart';
@@ -17,7 +21,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => ProfileBloc()..add(LoadProfilePage()),
+      create: (context) => ProfileBloc(
+        getIt<RecipeRepository>(),
+        getIt<UserRepository>(),
+      )..add(LoadProfilePage()),
       child: BlocListener<ProfileBloc, ProfileState>(
         listener: (context, state) {
           if (state.showHelpBottomSheet) {
@@ -84,10 +91,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
                 child: ClipOval(
-                  child: Image.asset(
-                    state.imageUrl,
-                    fit: BoxFit.cover,
-                  ),
+                  child: state.imageUrl.startsWith('http')
+                      ? Image.network(
+                          state.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Image.asset(
+                            AppImages.chefAvatar,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : Image.asset(
+                          state.imageUrl.isNotEmpty ? state.imageUrl : AppImages.chefAvatar,
+                          fit: BoxFit.cover,
+                        ),
                 ),
               ),
               // Floating Edit Pencil button

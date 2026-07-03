@@ -1,8 +1,84 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../router/routes.dart';
 import '../../../../shared/core/constants/asset_constants.dart';
 import '../../../../shared/widgets/avatar/profile_avatar.dart';
+import '../../../../shared/di/service_locator.dart';
+import '../../../../shared/data/repositories/recipe_repository.dart';
+import '../../../../shared/data/repositories/user_repository.dart';
+import '../../../../shared/data/models/user_profile_model.dart';
+import '../../../../shared/data/models/recipe_model.dart';
+import '../../bloc/home_bloc.dart';
+import '../../bloc/home_event.dart';
+import '../../bloc/home_state.dart';
+
+IconData _getCategoryIcon(String name) {
+  switch (name.toLowerCase()) {
+    case 'breakfast':
+      return Icons.wb_sunny_rounded;
+    case 'lunch':
+      return Icons.eco_rounded;
+    case 'dinner':
+      return Icons.dinner_dining_rounded;
+    case 'desserts':
+    case 'dessert':
+      return Icons.cake_rounded;
+    case 'snacks':
+    case 'snack':
+      return Icons.cookie_rounded;
+    case 'appetizers':
+      return Icons.restaurant_menu_rounded;
+    case 'soups':
+      return Icons.soup_kitchen_rounded;
+    case 'salads':
+      return Icons.restaurant_rounded;
+    case 'beverages':
+      return Icons.local_cafe_rounded;
+    case 'bakery':
+      return Icons.bakery_dining_rounded;
+    case 'seafood':
+      return Icons.set_meal_rounded;
+    default:
+      return Icons.restaurant_menu_rounded;
+  }
+}
+
+Color _getCategoryActiveBgColor(String name) {
+  switch (name.toLowerCase()) {
+    case 'breakfast':
+      return const Color(0xFFFFF2D9);
+    case 'lunch':
+      return const Color(0xFFEAF5E3);
+    case 'dinner':
+      return const Color(0xFFFDECEB);
+    case 'desserts':
+    case 'dessert':
+      return const Color(0xFFFAF0F5);
+    case 'snacks':
+      return const Color(0xFFFFF2D9);
+    default:
+      return const Color(0xFFFFF2D9);
+  }
+}
+
+Color _getCategoryIconColor(String name) {
+  switch (name.toLowerCase()) {
+    case 'breakfast':
+      return const Color(0xFFF47B20);
+    case 'lunch':
+      return const Color(0xFF4CAF50);
+    case 'dinner':
+      return const Color(0xFFE91E63);
+    case 'desserts':
+    case 'dessert':
+      return const Color(0xFF9C27B0);
+    case 'snacks':
+      return const Color(0xFFF47B20);
+    default:
+      return const Color(0xFFF47B20);
+  }
+}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,95 +90,141 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _activeCategoryIndex = 0;
 
-  final List<CategoryItem> _categories = [
-    CategoryItem(
-      label: 'Breakfast',
-      icon: Icons.wb_sunny_rounded,
-      activeBgColor: const Color(0xFFFFF2D9),
-      iconColor: const Color(0xFFF47B20),
-    ),
-    CategoryItem(
-      label: 'Lunch',
-      icon: Icons.eco_rounded,
-      activeBgColor: const Color(0xFFEAF5E3),
-      iconColor: const Color(0xFF4CAF50),
-    ),
-    CategoryItem(
-      label: 'Dinner',
-      icon: Icons.dinner_dining_rounded,
-      activeBgColor: const Color(0xFFFDECEB),
-      iconColor: const Color(0xFFE91E63),
-    ),
-    CategoryItem(
-      label: 'Dessert',
-      icon: Icons.cake_rounded,
-      activeBgColor: const Color(0xFFFAF0F5),
-      iconColor: const Color(0xFF9C27B0),
-    ),
-  ];
-
-  final List<RecipeItem> _trendingRecipes = [
-    RecipeItem(
-      id: 'r2',
-      title: 'Avocado Toast with Poached Egg',
-      imageUrl: AppImages.recipeAvocadoToast,
-      rating: '4.8',
-      reviews: '128',
-      cookTime: '15 min',
-      calories: '320 cal',
-    ),
-    RecipeItem(
-      id: 'r3',
-      title: 'Honey Glazed Salmon',
-      imageUrl: AppImages.recipeSalmon,
-      rating: '4.7',
-      reviews: '99',
-      cookTime: '25 min',
-      calories: '450 cal',
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAF7F2), // Premium Canvas background
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Header Row ──────────────────────────────────────────────
-              _buildHeader(),
+    return BlocProvider<HomeBloc>(
+      create: (context) => HomeBloc(
+        getIt<RecipeRepository>(),
+        getIt<UserRepository>(),
+      )..add(LoadHomeData()),
+      child: BlocBuilder<HomeBloc, HomeState>(
+        builder: (context, state) {
+          if (state is HomeLoading) {
+            return const Scaffold(
+              backgroundColor: Color(0xFFFAF7F2),
+              body: Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFFF47B20),
+                ),
+              ),
+            );
+          }
+          if (state is HomeError) {
+            return Scaffold(
+              backgroundColor: const Color(0xFFFAF7F2),
+              body: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Failed to load home data',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF1F1E1C),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        state.message,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: const Color(0xFF8C8A87),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () {
+                          // Trigger reload using the builder context
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF47B20),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+          if (state is HomeLoaded) {
+            final categories = state.categories
+                .map((c) => CategoryItem(
+                      label: c.name,
+                      icon: _getCategoryIcon(c.name),
+                      activeBgColor: _getCategoryActiveBgColor(c.name),
+                      iconColor: _getCategoryIconColor(c.name),
+                    ))
+                .toList();
 
-              const SizedBox(height: 24),
+            final trendingRecipes = state.trendingRecipes
+                .map((r) => RecipeItem(
+                      id: r.id,
+                      title: r.title,
+                      imageUrl: r.imageUrl,
+                      rating: r.rating.toString(),
+                      reviews: r.reviews.toString(),
+                      cookTime: r.cookTime,
+                      calories: r.calories,
+                    ))
+                .toList();
 
-              // ── Search Bar Trigger ──────────────────────────────────────
-              _buildSearchBar(),
+            final featuredRecipe = state.featuredRecipes.firstOrNull;
 
-              const SizedBox(height: 28),
+            return Scaffold(
+              backgroundColor: const Color(0xFFFAF7F2), // Premium Canvas background
+              body: SafeArea(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ── Header Row ──────────────────────────────────────────────
+                      _buildHeader(state.userProfile),
 
-              // ── Categories Horizontal List ──────────────────────────────
-              _buildCategoriesList(),
+                      const SizedBox(height: 24),
 
-              const SizedBox(height: 28),
+                      // ── Search Bar Trigger ──────────────────────────────────────
+                      _buildSearchBar(),
 
-              // ── Featured Hero Card ──────────────────────────────────────
-              _buildFeaturedCard(),
+                      const SizedBox(height: 28),
 
-              const SizedBox(height: 32),
+                      // ── Categories Horizontal List ──────────────────────────────
+                      _buildCategoriesList(categories),
 
-              // ── Trending Recipes Section ────────────────────────────────
-              _buildTrendingSection(),
-            ],
-          ),
-        ),
+                      const SizedBox(height: 28),
+
+                      // ── Featured Hero Card ──────────────────────────────────────
+                      _buildFeaturedCard(featuredRecipe),
+
+                      const SizedBox(height: 32),
+
+                      // ── Trending Recipes Section ────────────────────────────────
+                      _buildTrendingSection(trendingRecipes),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+          return const SizedBox.shrink();
+        },
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(UserProfileModel? profile) {
+    final displayName = profile?.name.split(' ').first ?? 'Sarah';
+    final avatarUrl = profile?.avatarUrl ?? '';
     return Row(
       children: [
         Column(
@@ -118,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 children: [
                   TextSpan(
-                    text: 'Sarah',
+                    text: displayName,
                     style: GoogleFonts.playfairDisplay(
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
@@ -141,8 +263,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const Spacer(),
         ProfileAvatar(
-          name: 'Sarah',
-          imageUrl: AppImages.chefAvatar,
+          name: displayName,
+          imageUrl: avatarUrl.isNotEmpty ? avatarUrl : AppImages.chefAvatar,
           radius: 24.0,
           onTap: () => const ProfileRoute().go(context),
         ),
@@ -206,16 +328,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCategoriesList() {
+  Widget _buildCategoriesList(List<CategoryItem> categories) {
     return SizedBox(
       height: 44,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        itemCount: _categories.length,
+        itemCount: categories.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
-          final item = _categories[index];
+          final item = categories[index];
           final isActive = _activeCategoryIndex == index;
           return GestureDetector(
             onTap: () {
@@ -261,7 +383,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildFeaturedCard() {
+  Widget _buildFeaturedCard(RecipeModel? recipe) {
+    final title = recipe?.title ?? 'Creamy Garlic\nChicken Pasta';
+    final description = recipe?.description ?? 'Rich, creamy, and full of flavor. Ready in under 30 minutes!';
+    final cookTime = recipe?.cookTime ?? '30 min';
+    final calories = recipe?.calories ?? '560 cal';
+    final imageUrl = recipe?.imageUrl ?? '';
+
     return Container(
       height: 320,
       width: double.infinity,
@@ -281,10 +409,19 @@ class _HomeScreenState extends State<HomeScreen> {
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(24),
-              child: Image.asset(
-                AppImages.heroBanner,
-                fit: BoxFit.cover,
-              ),
+              child: imageUrl.startsWith('http')
+                  ? Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Image.asset(
+                        AppImages.heroBanner,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : Image.asset(
+                      AppImages.heroBanner,
+                      fit: BoxFit.cover,
+                    ),
             ),
           ),
           // Dark Gradient Overlay
@@ -363,7 +500,7 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Creamy Garlic\nChicken Pasta',
+                  title,
                   style: GoogleFonts.playfairDisplay(
                     color: Colors.white,
                     fontSize: 28,
@@ -373,7 +510,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Rich, creamy, and full of flavor. Ready in under 30 minutes!',
+                  description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
                     color: Colors.white.withValues(alpha: 0.85),
                     fontSize: 13,
@@ -393,7 +532,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '30 min',
+                          cookTime,
                           style: GoogleFonts.poppins(
                             color: Colors.white,
                             fontSize: 12.5,
@@ -408,7 +547,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '560 cal',
+                          calories,
                           style: GoogleFonts.poppins(
                             color: Colors.white,
                             fontSize: 12.5,
@@ -418,7 +557,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     GestureDetector(
-                      onTap: () => const RecipeDetailRoute(recipeId: 'featured_1')
+                      onTap: () => RecipeDetailRoute(recipeId: recipe?.id ?? 'r0000000-0000-0000-0000-000000000001')
                           .push(context),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -459,8 +598,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  Widget _buildTrendingSection() {
+  Widget _buildTrendingSection(List<RecipeItem> trendingRecipes) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -505,11 +643,14 @@ class _HomeScreenState extends State<HomeScreen> {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
-            itemCount: _trendingRecipes.length,
+            itemCount: trendingRecipes.length,
             separatorBuilder: (_, __) => const SizedBox(width: 16),
             itemBuilder: (context, index) {
-              final item = _trendingRecipes[index];
-              return _buildTrendingCard(item);
+              final item = trendingRecipes[index];
+              return GestureDetector(
+                onTap: () => RecipeDetailRoute(recipeId: item.id).push(context),
+                child: _buildTrendingCard(item),
+              );
             },
           ),
         ),
@@ -545,10 +686,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(20),
                     ),
-                    child: Image.asset(
-                      item.imageUrl,
-                      fit: BoxFit.cover,
-                    ),
+                    child: item.imageUrl.startsWith('http')
+                        ? Image.network(
+                            item.imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Image.asset(
+                              AppImages.recipeRamen,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Image.asset(
+                            item.imageUrl,
+                            fit: BoxFit.cover,
+                          ),
                   ),
                 ),
                 // Bookmark circular button

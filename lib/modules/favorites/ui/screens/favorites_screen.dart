@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../router/routes.dart';
+import '../../../../shared/core/constants/asset_constants.dart';
+import '../../../../shared/di/service_locator.dart';
+import '../../../../shared/data/repositories/user_repository.dart';
 import '../../bloc/favorites_bloc.dart';
 import '../../bloc/favorites_event.dart';
 import '../../bloc/favorites_state.dart';
@@ -17,7 +20,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => FavoritesBloc()..add(LoadFavoritesPage()),
+      create: (context) => FavoritesBloc(
+        getIt<UserRepository>(),
+      )..add(LoadFavoritesPage()),
       child: BlocBuilder<FavoritesBloc, FavoritesState>(
         builder: (context, state) {
           return Scaffold(
@@ -268,10 +273,19 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(20),
                           ),
-                          child: Image.asset(
-                            item.imageUrl,
-                            fit: BoxFit.cover,
-                          ),
+                          child: item.imageUrl.startsWith('http')
+                              ? Image.network(
+                                  item.imageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Image.asset(
+                                    AppImages.recipeRamen,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : Image.asset(
+                                  item.imageUrl,
+                                  fit: BoxFit.cover,
+                                ),
                         ),
                       ),
                       // Bookmark/favorite overlay button (white circle with red filled heart)

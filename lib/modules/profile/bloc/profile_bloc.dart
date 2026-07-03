@@ -1,16 +1,20 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../shared/core/constants/asset_constants.dart';
+import '../../../../shared/data/repositories/recipe_repository.dart';
+import '../../../../shared/data/repositories/user_repository.dart';
 import 'profile_event.dart';
 import 'profile_state.dart';
 
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
-  ProfileBloc()
+  final RecipeRepository _recipeRepository;
+  final UserRepository _userRepository;
+
+  ProfileBloc(this._recipeRepository, this._userRepository)
       : super(const ProfileState(
           name: 'Sarah Johnson',
-          level: 'Home Chef Level 4',
-          imageUrl: AppImages.chefAvatar,
-          savedCount: 124,
-          cookedCount: 89,
+          level: 'Home Chef',
+          imageUrl: '',
+          savedCount: 0,
+          cookedCount: 0,
           isLoading: false,
           showHelpBottomSheet: false,
         )) {
@@ -19,12 +23,42 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<TriggerHelpCenter>(_onTriggerHelpCenter);
   }
 
-  void _onLoadProfilePage(LoadProfilePage event, Emitter<ProfileState> emit) {
-    emit(state.copyWith(isLoading: false, showHelpBottomSheet: false));
+  Future<void> _onLoadProfilePage(LoadProfilePage event, Emitter<ProfileState> emit) async {
+    emit(state.copyWith(isLoading: true));
+    try {
+      final user = _userRepository.getCurrentUser();
+      if (user != null) {
+        final profile = await _userRepository.getUserProfile(user.id);
+        final favorites = await _userRepository.getFavorites(user.id);
+        final viewed = await _recipeRepository.getRecentlyViewed(user.id);
+
+        emit(state.copyWith(
+          name: profile.name,
+          level: profile.chefLevel,
+          imageUrl: profile.avatarUrl,
+          savedCount: favorites.length,
+          cookedCount: viewed.length,
+          isLoading: false,
+          showHelpBottomSheet: false,
+        ));
+      } else {
+        emit(state.copyWith(isLoading: false));
+      }
+    } catch (_) {
+      emit(state.copyWith(isLoading: false));
+    }
   }
 
-  void _onUpdateAvatar(UpdateAvatar event, Emitter<ProfileState> emit) {
-    emit(state.copyWith(imageUrl: event.path));
+  Future<void> _onUpdateAvatar(UpdateAvatar event, Emitter<ProfileState> emit) async {
+    final user = _userRepository.getCurrentUser();
+    if (user != null) {
+      try {
+        final updatedUrl = await _userRepository.updateUserAvatar(user.id, event.path);
+        if (updatedUrl != null) {
+          emit(state.copyWith(imageUrl: updatedUrl));
+        }
+      } catch (_) {}
+    }
   }
 
   void _onTriggerHelpCenter(TriggerHelpCenter event, Emitter<ProfileState> emit) {

@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../router/routes.dart';
+import '../../../../shared/core/constants/asset_constants.dart';
+import '../../../../shared/di/service_locator.dart';
+import '../../../../shared/data/repositories/recipe_repository.dart';
+import '../../../../shared/data/repositories/user_repository.dart';
 import '../../bloc/search_bloc.dart';
 import '../../bloc/search_event.dart';
 import '../../bloc/search_state.dart';
@@ -36,7 +40,10 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => SearchBloc()..add(LoadSearchPage()),
+      create: (context) => SearchBloc(
+        getIt<RecipeRepository>(),
+        getIt<UserRepository>(),
+      )..add(LoadSearchPage()),
       child: Builder(
         builder: (context) {
           // Initialize state if initial query is passed via routing
@@ -595,10 +602,19 @@ class _SearchScreenState extends State<SearchScreen> {
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(20),
                           ),
-                          child: Image.asset(
-                            item.imageUrl,
-                            fit: BoxFit.cover,
-                          ),
+                          child: item.imageUrl.startsWith('http')
+                              ? Image.network(
+                                  item.imageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Image.asset(
+                                    AppImages.recipeRamen,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : Image.asset(
+                                  item.imageUrl,
+                                  fit: BoxFit.cover,
+                                ),
                         ),
                       ),
                       // Bookmark/favorite overlay button (white circle with heart)

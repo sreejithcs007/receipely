@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../router/routes.dart';
+import '../../../../shared/di/service_locator.dart';
+import '../../../../shared/data/repositories/user_repository.dart';
 import '../../bloc/settings_bloc.dart';
 import '../../bloc/settings_event.dart';
 import '../../bloc/settings_state.dart';
@@ -29,7 +31,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => SettingsBloc()..add(LoadSettings()),
+      create: (context) => SettingsBloc(getIt<UserRepository>())..add(LoadSettings()),
       child: BlocListener<SettingsBloc, SettingsState>(
         listenWhen: (previous, current) => previous.activeSubSection != current.activeSubSection,
         listener: (context, state) {

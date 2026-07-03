@@ -1,38 +1,27 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../shared/core/constants/asset_constants.dart';
+import '../../../../shared/data/repositories/recipe_repository.dart';
+import '../../../../shared/data/repositories/user_repository.dart';
 import 'recipe_detail_event.dart';
 import 'recipe_detail_state.dart';
 
 class RecipeDetailBloc extends Bloc<RecipeDetailEvent, RecipeDetailState> {
-  RecipeDetailBloc()
-      : super(RecipeDetailState(
-          recipeId: 'truffle_pasta',
-          title: 'Truffle Mushroom Pasta',
-          description: 'A creamy and indulgent pasta dish with earthy mushrooms, aromatic truffle oil, and parmesan.',
-          imageUrl: AppImages.heroBanner,
-          rating: '4.9',
-          reviews: '2.3k',
-          cookTime: '30 min',
-          calories: '520 cal',
-          servings: '4 servings',
-          ingredients: const [
-            '12 oz fettuccine pasta',
-            '2 tbsp olive oil',
-            '3 cloves garlic, minced',
-            '8 oz cremini mushrooms, sliced',
-            '1/2 cup heavy cream',
-            '1/4 cup grated parmesan cheese',
-            '1 tbsp truffle oil',
-            'Salt and black pepper, to taste',
-          ],
-          checkedIngredients: List.filled(8, false),
-          steps: const [
-            'Boil pasta in salted water according to package directions until al dente.',
-            'Heat olive oil in a large skillet over medium-high heat. Add minced garlic and sauté until fragrant.',
-            'Add cremini mushrooms and cook until browned, about 5-7 minutes. Season with salt and pepper.',
-            'Reduce heat to low, stir in heavy cream and grated parmesan cheese. Simmer gently for 2 minutes.',
-            'Drain pasta and toss it in the skillet with the creamy mushroom sauce. Drizzle with truffle oil before serving.',
-          ],
+  final RecipeRepository _recipeRepository;
+  final UserRepository _userRepository;
+
+  RecipeDetailBloc(this._recipeRepository, this._userRepository)
+      : super(const RecipeDetailState(
+          recipeId: '',
+          title: 'Loading...',
+          description: '',
+          imageUrl: '',
+          rating: '0.0',
+          reviews: '0',
+          cookTime: '0 min',
+          calories: '0 kcal',
+          servings: '1 serving',
+          ingredients: [],
+          checkedIngredients: [],
+          steps: [],
           isFavorite: false,
           selectedTabIndex: 0,
           isCooking: false,
@@ -48,8 +37,39 @@ class RecipeDetailBloc extends Bloc<RecipeDetailEvent, RecipeDetailState> {
     on<CancelCooking>(_onCancelCooking);
   }
 
-  void _onLoadRecipeDetail(LoadRecipeDetail event, Emitter<RecipeDetailState> emit) {
+  Future<void> _onLoadRecipeDetail(LoadRecipeDetail event, Emitter<RecipeDetailState> emit) async {
     emit(state.copyWith(recipeId: event.recipeId));
+    try {
+      final recipes = await _recipeRepository.getRecipes();
+      final recipe = recipes.firstWhere((r) => r.id == event.recipeId);
+      final ingredients = await _recipeRepository.getRecipeIngredients(event.recipeId);
+      final steps = await _recipeRepository.getRecipeSteps(event.recipeId);
+
+      final user = _userRepository.getCurrentUser();
+      bool isFav = false;
+      if (user != null) {
+        // Add to recently viewed
+        await _recipeRepository.addRecentlyViewed(user.id, event.recipeId);
+        
+        final favorites = await _userRepository.getFavorites(user.id);
+        isFav = favorites.any((f) => f.id == event.recipeId);
+      }
+
+      emit(state.copyWith(
+        title: recipe.title,
+        description: recipe.description,
+        imageUrl: recipe.imageUrl,
+        rating: recipe.rating.toString(),
+        reviews: recipe.reviews.toString(),
+        cookTime: recipe.cookTime,
+        calories: recipe.calories,
+        servings: recipe.servings,
+        ingredients: ingredients,
+        checkedIngredients: List.filled(ingredients.length, false),
+        steps: steps,
+        isFavorite: isFav,
+      ));
+    } catch (_) {}
   }
 
   void _onToggleIngredientCheck(ToggleIngredientCheck event, Emitter<RecipeDetailState> emit) {
@@ -58,8 +78,22 @@ class RecipeDetailBloc extends Bloc<RecipeDetailEvent, RecipeDetailState> {
     emit(state.copyWith(checkedIngredients: updated));
   }
 
-  void _onToggleFavorite(ToggleFavorite event, Emitter<RecipeDetailState> emit) {
-    emit(state.copyWith(isFavorite: !state.isFavorite));
+  Future<void> _onToggleFavorite(ToggleFavorite event, Emitter<RecipeDetailState> emit) async {
+    final user = _userRepository.getCurrentUser();
+    if (user != null) {
+      final nextFavState = !state.isFavorite;
+      emit(state.copyWith(isFavorite: nextFavState));
+      try {
+        if (nextFavState) {
+          await _userRepository.addFavorite(user.id, state.recipeId);
+        } else {
+          await _userRepository.removeFavorite(user.id, state.recipeId);
+        }
+      } catch (_) {
+        // Rollback state on error
+        emit(state.copyWith(isFavorite: !nextFavState));
+      }
+    }
   }
 
   void _onTabChanged(ChangeTab event, Emitter<RecipeDetailState> emit) {

@@ -1,57 +1,18 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../shared/core/constants/asset_constants.dart';
+import '../../../../shared/data/models/recipe_model.dart';
+import '../../../../shared/data/repositories/recipe_repository.dart';
+import '../../../../shared/data/repositories/user_repository.dart';
 import 'search_event.dart';
 import 'search_state.dart';
 
 class SearchBloc extends Bloc<SearchEvent, SearchState> {
-  // All recipes in the app (Mock Data)
-  static final List<RecipeSearchResult> _allRecipes = [
-    const RecipeSearchResult(
-      id: 'r_pasta',
-      title: 'Creamy Garlic Parmesan Pasta',
-      imageUrl: AppImages.heroBanner,
-      rating: '4.8',
-      cookTime: '25 min',
-      calories: '560 cal',
-      cuisine: 'Italian',
-      diet: 'Vegetarian',
-    ),
-    const RecipeSearchResult(
-      id: 'r_salad',
-      title: 'Greek Chicken Salad',
-      imageUrl: AppImages.heroBanner,
-      rating: '4.7',
-      cookTime: '20 min',
-      calories: '380 cal',
-      cuisine: 'Greek',
-      diet: 'Low Carb',
-    ),
-    const RecipeSearchResult(
-      id: 'r_smoothie',
-      title: 'Berry Blast Smoothie',
-      imageUrl: AppImages.heroBanner,
-      rating: '4.9',
-      cookTime: '5 min',
-      calories: '210 cal',
-      cuisine: 'American',
-      diet: 'Vegan',
-    ),
-    const RecipeSearchResult(
-      id: 'r_curry',
-      title: 'Coconut Chickpea Curry',
-      imageUrl: AppImages.heroBanner,
-      rating: '4.8',
-      cookTime: '30 min',
-      calories: '420 cal',
-      cuisine: 'Indian',
-      diet: 'Vegan',
-    ),
-  ];
+  final RecipeRepository _recipeRepository;
+  final UserRepository _userRepository;
 
-  SearchBloc()
+  SearchBloc(this._recipeRepository, this._userRepository)
       : super(const SearchState(
           query: '',
-          recentSearches: ['pasta', 'salad', 'smoothie'],
+          recentSearches: [],
           results: [],
           isLoading: false,
         )) {
@@ -63,42 +24,73 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
     on<SelectFilter>(_onSelectFilter);
   }
 
-  void _onLoadSearchPage(LoadSearchPage event, Emitter<SearchState> emit) {
-    emit(state.copyWith(
-      results: _filterRecipes(state.query, state.cuisineFilter, state.dietFilter, state.timeFilter),
-    ));
+  Future<void> _onLoadSearchPage(LoadSearchPage event, Emitter<SearchState> emit) async {
+    emit(state.copyWith(isLoading: true));
+    try {
+      final user = _userRepository.getCurrentUser();
+      List<String> searches = [];
+      if (user != null) {
+        searches = await _userRepository.getSearchHistory(user.id);
+      }
+      
+      final recipes = await _recipeRepository.getRecipes();
+      final results = _mapAndFilter(recipes, state.query, state.cuisineFilter, state.dietFilter, state.timeFilter);
+
+      emit(state.copyWith(
+        recentSearches: searches,
+        results: results,
+        isLoading: false,
+      ));
+    } catch (_) {
+      emit(state.copyWith(isLoading: false));
+    }
   }
 
-  void _onSearchQueryChanged(SearchQueryChanged event, Emitter<SearchState> emit) {
-    emit(state.copyWith(
-      query: event.query,
-      results: _filterRecipes(event.query, state.cuisineFilter, state.dietFilter, state.timeFilter),
-    ));
+  Future<void> _onSearchQueryChanged(SearchQueryChanged event, Emitter<SearchState> emit) async {
+    emit(state.copyWith(query: event.query, isLoading: true));
+    try {
+      final recipes = await _recipeRepository.getRecipes(query: event.query);
+      final results = _mapAndFilter(recipes, event.query, state.cuisineFilter, state.dietFilter, state.timeFilter);
+      emit(state.copyWith(results: results, isLoading: false));
+    } catch (_) {
+      emit(state.copyWith(isLoading: false));
+    }
   }
 
-  void _onAddRecentSearch(AddRecentSearch event, Emitter<SearchState> emit) {
-    final query = event.query.trim().toLowerCase();
+  Future<void> _onAddRecentSearch(AddRecentSearch event, Emitter<SearchState> emit) async {
+    final query = event.query.trim();
     if (query.isEmpty) return;
-    
-    final updated = List<String>.from(state.recentSearches);
-    updated.remove(query); // remove duplicate
-    updated.insert(0, query); // put at front
-    if (updated.length > 5) updated.removeLast(); // limit size
-    
-    emit(state.copyWith(recentSearches: updated));
+
+    final user = _userRepository.getCurrentUser();
+    if (user != null) {
+      try {
+        await _userRepository.addSearchHistory(user.id, query);
+        final searches = await _userRepository.getSearchHistory(user.id);
+        emit(state.copyWith(recentSearches: searches));
+      } catch (_) {}
+    }
   }
 
-  void _onRemoveRecentSearch(RemoveRecentSearch event, Emitter<SearchState> emit) {
-    final updated = List<String>.from(state.recentSearches)
-      ..remove(event.query.toLowerCase());
-    emit(state.copyWith(recentSearches: updated));
+  Future<void> _onRemoveRecentSearch(RemoveRecentSearch event, Emitter<SearchState> emit) async {
+    final user = _userRepository.getCurrentUser();
+    if (user != null) {
+      // Just filter local for now
+      final updated = List<String>.from(state.recentSearches)..remove(event.query);
+      emit(state.copyWith(recentSearches: updated));
+    }
   }
 
-  void _onClearRecentSearches(ClearRecentSearches event, Emitter<SearchState> emit) {
-    emit(state.copyWith(recentSearches: const []));
+  Future<void> _onClearRecentSearches(ClearRecentSearches event, Emitter<SearchState> emit) async {
+    final user = _userRepository.getCurrentUser();
+    if (user != null) {
+      try {
+        await _userRepository.clearSearchHistory(user.id);
+        emit(state.copyWith(recentSearches: const []));
+      } catch (_) {}
+    }
   }
 
-  void _onSelectFilter(SelectFilter event, Emitter<SearchState> emit) {
+  Future<void> _onSelectFilter(SelectFilter event, Emitter<SearchState> emit) async {
     String? cuisine = state.cuisineFilter;
     String? diet = state.dietFilter;
     String? time = state.timeFilter;
@@ -115,46 +107,55 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
       cuisineFilter: () => cuisine,
       dietFilter: () => diet,
       timeFilter: () => time,
-      results: _filterRecipes(state.query, cuisine, diet, time),
+      isLoading: true,
     ));
+
+    try {
+      final recipes = await _recipeRepository.getRecipes(query: state.query);
+      final results = _mapAndFilter(recipes, state.query, cuisine, diet, time);
+      emit(state.copyWith(results: results, isLoading: false));
+    } catch (_) {
+      emit(state.copyWith(isLoading: false));
+    }
   }
 
-  List<RecipeSearchResult> _filterRecipes(
+  List<RecipeSearchResult> _mapAndFilter(
+    List<RecipeModel> recipes,
     String query,
     String? cuisine,
     String? diet,
     String? time,
   ) {
-    return _allRecipes.where((recipe) {
-      // 1. Text Query Filter
-      if (query.isNotEmpty) {
-        final q = query.toLowerCase();
-        final matchesTitle = recipe.title.toLowerCase().contains(q);
-        final matchesCuisine = recipe.cuisine.toLowerCase().contains(q);
-        final matchesDiet = recipe.diet.toLowerCase().contains(q);
-        if (!matchesTitle && !matchesCuisine && !matchesDiet) {
-          return false;
-        }
+    return recipes.where((recipe) {
+      if (cuisine != null && cuisine.isNotEmpty) {
+        final matchesCuisine = recipe.title.toLowerCase().contains(cuisine.toLowerCase()) || 
+                             recipe.description.toLowerCase().contains(cuisine.toLowerCase()) ||
+                             recipe.difficulty.toLowerCase() == cuisine.toLowerCase();
+        if (!matchesCuisine) return false;
       }
 
-      // 2. Cuisine Filter
-      if (cuisine != null && recipe.cuisine != cuisine) {
-        return false;
+      if (diet != null && diet.isNotEmpty) {
+        final matchesDiet = recipe.title.toLowerCase().contains(diet.toLowerCase()) || 
+                           recipe.description.toLowerCase().contains(diet.toLowerCase());
+        if (!matchesDiet) return false;
       }
 
-      // 3. Diet Filter
-      if (diet != null && recipe.diet != diet) {
-        return false;
-      }
-
-      // 4. Time Filter
-      if (time != null) {
+      if (time != null && time.isNotEmpty) {
         final minutes = int.tryParse(recipe.cookTime.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
         if (time == 'Under 15 min' && minutes >= 15) return false;
         if (time == 'Under 30 min' && minutes >= 30) return false;
       }
 
       return true;
-    }).toList();
+    }).map((r) => RecipeSearchResult(
+      id: r.id,
+      title: r.title,
+      imageUrl: r.imageUrl,
+      rating: r.rating.toString(),
+      cookTime: r.cookTime,
+      calories: r.calories,
+      cuisine: r.difficulty,
+      diet: r.servings,
+    )).toList();
   }
 }
