@@ -60,6 +60,10 @@ class UserRepository {
     await _dataSource.clearSearchHistory(userId);
   }
 
+  Future<void> deleteSearchHistoryQuery(String userId, String query) async {
+    await _dataSource.deleteSearchHistoryQuery(userId, query);
+  }
+
   Future<Map<String, dynamic>> getUserPreferences(String userId) async {
     return await _dataSource.getUserPreferences(userId);
   }

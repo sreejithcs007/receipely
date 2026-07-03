@@ -36,7 +36,55 @@ class SupabaseDataSource {
     return (response as List).map((json) => CategoryModel.fromJson(json)).toList();
   }
 
-  Future<List<RecipeModel>> getRecipes({String? query, String? category}) async {
+  Future<List<RecipeModel>> getRecipes({
+    String? query,
+    String? category,
+    String? cuisine,
+    String? difficulty,
+    int? maxTimeMin,
+    int? maxCalories,
+    double? minRating,
+    String? mealType,
+    List<String>? dietary,
+    String sortBy = 'relevance',
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final hasFilters = (cuisine != null && cuisine.isNotEmpty) ||
+        (difficulty != null && difficulty.isNotEmpty) ||
+        maxTimeMin != null ||
+        maxCalories != null ||
+        minRating != null ||
+        (mealType != null && mealType.isNotEmpty) ||
+        (dietary != null && dietary.isNotEmpty);
+
+    if ((query != null && query.isNotEmpty) || hasFilters) {
+      String? categoryId;
+      if (category != null && category.isNotEmpty) {
+        final catResp = await _client.from('categories').select('id').eq('name', category).maybeSingle();
+        if (catResp != null) {
+          categoryId = catResp['id'] as String;
+        }
+      }
+
+      final response = await _client.rpc('search_recipes', params: {
+        'p_query': query,
+        'p_category_id': categoryId,
+        'p_cuisine': cuisine,
+        'p_difficulty': difficulty,
+        'p_max_time_min': maxTimeMin,
+        'p_max_calories': maxCalories,
+        'p_min_rating': minRating,
+        'p_meal_type': mealType,
+        'p_dietary': dietary,
+        'p_sort_by': sortBy,
+        'p_limit': limit,
+        'p_offset': offset,
+      });
+
+      return (response as List).map((json) => RecipeModel.fromJson(json)).toList();
+    }
+
     var request = _client.from('recipes').select();
     
     if (category != null && category.isNotEmpty) {
@@ -51,10 +99,6 @@ class SupabaseDataSource {
           return [];
         }
       }
-    }
-
-    if (query != null && query.isNotEmpty) {
-      request = request.ilike('title', '%$query%');
     }
 
     final response = await request;
@@ -156,26 +200,70 @@ class SupabaseDataSource {
     });
   }
 
-  // ── Search History ───────────────────────────────────────────────────
+  // ── Search History & Advanced Search ─────────────────────────────────
   Future<List<String>> getSearchHistory(String userId) async {
-    final response = await _client
-        .from('search_history')
-        .select('query')
-        .eq('user_id', userId)
-        .order('created_at', ascending: false)
-        .limit(10);
+    final response = await _client.rpc('get_recent_searches', params: {
+      'p_user_id': userId,
+      'p_limit': 10,
+    });
     return (response as List).map((json) => json['query'] as String).toList();
   }
 
   Future<void> addSearchHistory(String userId, String query) async {
-    await _client.from('search_history').insert({
-      'user_id': userId,
-      'query': query,
+    await _client.rpc('upsert_search_history', params: {
+      'p_user_id': userId,
+      'p_query': query,
     });
   }
 
   Future<void> clearSearchHistory(String userId) async {
-    await _client.from('search_history').delete().eq('user_id', userId);
+    await _client.rpc('clear_search_history', params: {
+      'p_user_id': userId,
+    });
+  }
+
+  Future<void> deleteSearchHistoryQuery(String userId, String query) async {
+    await _client.from('search_history').delete().eq('user_id', userId).eq('query', query);
+  }
+
+  Future<List<Map<String, dynamic>>> getSearchSuggestions(String query, {int limit = 8}) async {
+    final response = await _client.rpc('search_suggestions', params: {
+      'p_query': query,
+      'p_limit': limit,
+    });
+    return (response as List).map((json) => Map<String, dynamic>.from(json)).toList();
+  }
+
+  Future<List<String>> getTrendingSearches({String window = 'weekly', int limit = 10}) async {
+    final response = await _client.rpc('get_trending_searches', params: {
+      'p_window': window,
+      'p_limit': limit,
+    });
+    return (response as List).map((json) => json['query'] as String).toList();
+  }
+
+  Future<void> logSearchEvent({
+    required String? userId,
+    required String query,
+    required int resultsCount,
+    required bool hadResults,
+    required int searchDurationMs,
+    String? clickedRecipeId,
+    String? sortBy,
+    Map<String, dynamic>? filtersApplied,
+  }) async {
+    try {
+      await _client.rpc('log_search_event', params: {
+        'p_user_id': userId,
+        'p_query': query,
+        'p_results_count': resultsCount,
+        'p_had_results': hadResults,
+        'p_search_duration_ms': searchDurationMs,
+        'p_clicked_recipe_id': clickedRecipeId,
+        'p_sort_by': sortBy,
+        'p_filters_applied': filtersApplied,
+      });
+    } catch (_) {}
   }
 
   // ── Preferences ──────────────────────────────────────────────────────

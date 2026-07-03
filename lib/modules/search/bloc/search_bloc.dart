@@ -34,7 +34,7 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
       }
       
       final recipes = await _recipeRepository.getRecipes();
-      final results = _mapAndFilter(recipes, state.query, state.cuisineFilter, state.dietFilter, state.timeFilter);
+      final results = _mapToSearchResults(recipes);
 
       emit(state.copyWith(
         recentSearches: searches,
@@ -48,10 +48,39 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
 
   Future<void> _onSearchQueryChanged(SearchQueryChanged event, Emitter<SearchState> emit) async {
     emit(state.copyWith(query: event.query, isLoading: true));
+    final stopwatch = Stopwatch()..start();
     try {
-      final recipes = await _recipeRepository.getRecipes(query: event.query);
-      final results = _mapAndFilter(recipes, event.query, state.cuisineFilter, state.dietFilter, state.timeFilter);
+      int? maxTimeMin;
+      if (state.timeFilter == 'Under 15 min') {
+        maxTimeMin = 15;
+      } else if (state.timeFilter == 'Under 30 min') {
+        maxTimeMin = 30;
+      }
+
+      final recipes = await _recipeRepository.getRecipes(
+        query: event.query,
+        cuisine: state.cuisineFilter,
+        dietary: state.dietFilter != null ? [state.dietFilter!] : null,
+        maxTimeMin: maxTimeMin,
+      );
+      final results = _mapToSearchResults(recipes);
       emit(state.copyWith(results: results, isLoading: false));
+
+      // Log search analytics event
+      stopwatch.stop();
+      final user = _userRepository.getCurrentUser();
+      await _recipeRepository.logSearchEvent(
+        userId: user?.id,
+        query: event.query,
+        resultsCount: results.length,
+        hadResults: results.isNotEmpty,
+        searchDurationMs: stopwatch.elapsedMilliseconds,
+        filtersApplied: {
+          'cuisine': state.cuisineFilter,
+          'diet': state.dietFilter,
+          'time': state.timeFilter,
+        },
+      );
     } catch (_) {
       emit(state.copyWith(isLoading: false));
     }
@@ -73,10 +102,13 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
 
   Future<void> _onRemoveRecentSearch(RemoveRecentSearch event, Emitter<SearchState> emit) async {
     final user = _userRepository.getCurrentUser();
+    final updated = List<String>.from(state.recentSearches)..remove(event.query);
+    emit(state.copyWith(recentSearches: updated));
+
     if (user != null) {
-      // Just filter local for now
-      final updated = List<String>.from(state.recentSearches)..remove(event.query);
-      emit(state.copyWith(recentSearches: updated));
+      try {
+        await _userRepository.deleteSearchHistoryQuery(user.id, event.query);
+      } catch (_) {}
     }
   }
 
@@ -110,44 +142,46 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
       isLoading: true,
     ));
 
+    final stopwatch = Stopwatch()..start();
     try {
-      final recipes = await _recipeRepository.getRecipes(query: state.query);
-      final results = _mapAndFilter(recipes, state.query, cuisine, diet, time);
+      int? maxTimeMin;
+      if (time == 'Under 15 min') {
+        maxTimeMin = 15;
+      } else if (time == 'Under 30 min') {
+        maxTimeMin = 30;
+      }
+
+      final recipes = await _recipeRepository.getRecipes(
+        query: state.query,
+        cuisine: cuisine,
+        dietary: diet != null ? [diet] : null,
+        maxTimeMin: maxTimeMin,
+      );
+      final results = _mapToSearchResults(recipes);
       emit(state.copyWith(results: results, isLoading: false));
+
+      // Log search analytics event
+      stopwatch.stop();
+      final user = _userRepository.getCurrentUser();
+      await _recipeRepository.logSearchEvent(
+        userId: user?.id,
+        query: state.query,
+        resultsCount: results.length,
+        hadResults: results.isNotEmpty,
+        searchDurationMs: stopwatch.elapsedMilliseconds,
+        filtersApplied: {
+          'cuisine': cuisine,
+          'diet': diet,
+          'time': time,
+        },
+      );
     } catch (_) {
       emit(state.copyWith(isLoading: false));
     }
   }
 
-  List<RecipeSearchResult> _mapAndFilter(
-    List<RecipeModel> recipes,
-    String query,
-    String? cuisine,
-    String? diet,
-    String? time,
-  ) {
-    return recipes.where((recipe) {
-      if (cuisine != null && cuisine.isNotEmpty) {
-        final matchesCuisine = recipe.title.toLowerCase().contains(cuisine.toLowerCase()) || 
-                             recipe.description.toLowerCase().contains(cuisine.toLowerCase()) ||
-                             recipe.difficulty.toLowerCase() == cuisine.toLowerCase();
-        if (!matchesCuisine) return false;
-      }
-
-      if (diet != null && diet.isNotEmpty) {
-        final matchesDiet = recipe.title.toLowerCase().contains(diet.toLowerCase()) || 
-                           recipe.description.toLowerCase().contains(diet.toLowerCase());
-        if (!matchesDiet) return false;
-      }
-
-      if (time != null && time.isNotEmpty) {
-        final minutes = int.tryParse(recipe.cookTime.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
-        if (time == 'Under 15 min' && minutes >= 15) return false;
-        if (time == 'Under 30 min' && minutes >= 30) return false;
-      }
-
-      return true;
-    }).map((r) => RecipeSearchResult(
+  List<RecipeSearchResult> _mapToSearchResults(List<RecipeModel> recipes) {
+    return recipes.map((r) => RecipeSearchResult(
       id: r.id,
       title: r.title,
       imageUrl: r.imageUrl,
