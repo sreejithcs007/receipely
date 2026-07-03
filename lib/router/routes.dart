@@ -14,6 +14,7 @@ import '../modules/meal_planner/ui/screens/meal_planner_screen.dart';
 import '../modules/shopping_list/ui/screens/shopping_list_screen.dart';
 import '../modules/ai_generator/ui/screens/ai_generator_screen.dart';
 import '../modules/profile/ui/screens/profile_screen.dart';
+import '../modules/settings/ui/screens/settings_screen.dart';
 
 part 'routes.g.dart';
 
@@ -137,7 +138,7 @@ class SettingsRoute extends GoRouteData {
   const SettingsRoute();
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      const PlaceholderScreen(title: 'Settings');
+      const SettingsScreen();
 }
 
 @TypedGoRoute<NotificationsRoute>(path: '/notifications')
