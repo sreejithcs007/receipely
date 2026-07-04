@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'favorites_state.dart';
 
 abstract class FavoritesEvent extends Equatable {
   const FavoritesEvent();
@@ -17,18 +18,10 @@ class ToggleFavoriteItemState extends FavoritesEvent {
   List<Object?> get props => [recipeId];
 }
 
-class ChangeFavoritesTab extends FavoritesEvent {
-  final int index;
-  const ChangeFavoritesTab(this.index);
+class SortFavorites extends FavoritesEvent {
+  final FavoritesSortType sortType;
+  const SortFavorites(this.sortType);
 
   @override
-  List<Object?> get props => [index];
-}
-
-class CreateCollection extends FavoritesEvent {
-  final String name;
-  const CreateCollection(this.name);
-
-  @override
-  List<Object?> get props => [name];
+  List<Object?> get props => [sortType];
 }

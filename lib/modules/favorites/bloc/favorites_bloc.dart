@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../shared/data/models/recipe_model.dart';
 import '../../../../shared/data/repositories/user_repository.dart';
 import 'favorites_event.dart';
 import 'favorites_state.dart';
@@ -8,15 +9,13 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
 
   FavoritesBloc(this._userRepository)
       : super(const FavoritesState(
-          selectedTabIndex: 0,
           favorites: [],
-          collections: [],
+          sortType: FavoritesSortType.latestToOldest,
           isLoading: false,
         )) {
     on<LoadFavoritesPage>(_onLoadFavoritesPage);
     on<ToggleFavoriteItemState>(_onToggleFavoriteItemState);
-    on<ChangeFavoritesTab>(_onChangeFavoritesTab);
-    on<CreateCollection>(_onCreateCollection);
+    on<SortFavorites>(_onSortFavorites);
   }
 
   Future<void> _onLoadFavoritesPage(LoadFavoritesPage event, Emitter<FavoritesState> emit) async {
@@ -24,33 +23,25 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     try {
       final user = _userRepository.getCurrentUser();
       if (user != null) {
-        final favorites = await _userRepository.getFavorites(user.id);
-        final favList = favorites.map((r) => FavoriteRecipeItem(
-          id: r.id,
-          title: r.title,
-          imageUrl: r.imageUrl,
-          cookTime: r.cookTime,
-          difficulty: r.difficulty,
-        )).toList();
+        final favoritesData = await _userRepository.getFavoritesWithDate(user.id);
+        final favList = favoritesData.map((item) {
+          final recipeJson = item['recipes'] as Map<String, dynamic>;
+          final r = RecipeModel.fromJson(recipeJson);
+          final createdAtStr = item['created_at'] as String;
+          return FavoriteRecipeItem(
+            id: r.id,
+            title: r.title,
+            imageUrl: r.imageUrl,
+            cookTime: r.cookTime,
+            difficulty: r.difficulty,
+            favoritedAt: DateTime.tryParse(createdAtStr) ?? DateTime.now(),
+          );
+        }).toList();
 
-        final collectionsList = [
-          const FavoriteCollectionItem(
-            id: 'col_breakfast',
-            name: 'Breakfast Ideas',
-            recipeCount: 12,
-            badgeHexColor: 0xFFFFF2D9,
-          ),
-          const FavoriteCollectionItem(
-            id: 'col_quick_din',
-            name: 'Quick Dinners',
-            recipeCount: 18,
-            badgeHexColor: 0xFFEAF5E3,
-          ),
-        ];
+        final sorted = _sortRecipes(favList, state.sortType);
 
         emit(state.copyWith(
-          favorites: favList,
-          collections: collectionsList,
+          favorites: sorted,
           isLoading: false,
         ));
       } else {
@@ -73,18 +64,30 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     }
   }
 
-  void _onChangeFavoritesTab(ChangeFavoritesTab event, Emitter<FavoritesState> emit) {
-    emit(state.copyWith(selectedTabIndex: event.index));
+  void _onSortFavorites(SortFavorites event, Emitter<FavoritesState> emit) {
+    final sorted = _sortRecipes(state.favorites, event.sortType);
+    emit(state.copyWith(
+      sortType: event.sortType,
+      favorites: sorted,
+    ));
   }
 
-  Future<void> _onCreateCollection(CreateCollection event, Emitter<FavoritesState> emit) async {
-    final updated = List<FavoriteCollectionItem>.from(state.collections)
-      ..add(FavoriteCollectionItem(
-        id: 'col_${DateTime.now().millisecondsSinceEpoch}',
-        name: event.name,
-        recipeCount: 0,
-        badgeHexColor: 0xFFFAF0F5,
-      ));
-    emit(state.copyWith(collections: updated));
+  List<FavoriteRecipeItem> _sortRecipes(List<FavoriteRecipeItem> items, FavoritesSortType sortType) {
+    final sorted = List<FavoriteRecipeItem>.from(items);
+    switch (sortType) {
+      case FavoritesSortType.latestToOldest:
+        sorted.sort((a, b) => b.favoritedAt.compareTo(a.favoritedAt));
+        break;
+      case FavoritesSortType.oldestToLatest:
+        sorted.sort((a, b) => a.favoritedAt.compareTo(b.favoritedAt));
+        break;
+      case FavoritesSortType.alphabeticalAZ:
+        sorted.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+        break;
+      case FavoritesSortType.alphabeticalZA:
+        sorted.sort((a, b) => b.title.toLowerCase().compareTo(a.title.toLowerCase()));
+        break;
+    }
+    return sorted;
   }
 }

@@ -6,6 +6,7 @@ class FavoriteRecipeItem extends Equatable {
   final String imageUrl;
   final String cookTime;
   final String difficulty;
+  final DateTime favoritedAt;
 
   const FavoriteRecipeItem({
     required this.id,
@@ -13,56 +14,43 @@ class FavoriteRecipeItem extends Equatable {
     required this.imageUrl,
     required this.cookTime,
     required this.difficulty,
+    required this.favoritedAt,
   });
 
   @override
-  List<Object?> get props => [id, title, imageUrl, cookTime, difficulty];
+  List<Object?> get props => [id, title, imageUrl, cookTime, difficulty, favoritedAt];
 }
 
-class FavoriteCollectionItem extends Equatable {
-  final String id;
-  final String name;
-  final int recipeCount;
-  final int badgeHexColor; // Background color for the folder badge
-
-  const FavoriteCollectionItem({
-    required this.id,
-    required this.name,
-    required this.recipeCount,
-    required this.badgeHexColor,
-  });
-
-  @override
-  List<Object?> get props => [id, name, recipeCount, badgeHexColor];
+enum FavoritesSortType {
+  latestToOldest,
+  oldestToLatest,
+  alphabeticalAZ,
+  alphabeticalZA,
 }
 
 class FavoritesState extends Equatable {
-  final int selectedTabIndex; // 0 = All, 1 = Collections
   final List<FavoriteRecipeItem> favorites;
-  final List<FavoriteCollectionItem> collections;
+  final FavoritesSortType sortType;
   final bool isLoading;
 
   const FavoritesState({
-    required this.selectedTabIndex,
     required this.favorites,
-    required this.collections,
+    required this.sortType,
     required this.isLoading,
   });
 
   FavoritesState copyWith({
-    int? selectedTabIndex,
     List<FavoriteRecipeItem>? favorites,
-    List<FavoriteCollectionItem>? collections,
+    FavoritesSortType? sortType,
     bool? isLoading,
   }) {
     return FavoritesState(
-      selectedTabIndex: selectedTabIndex ?? this.selectedTabIndex,
       favorites: favorites ?? this.favorites,
-      collections: collections ?? this.collections,
+      sortType: sortType ?? this.sortType,
       isLoading: isLoading ?? this.isLoading,
     );
   }
 
   @override
-  List<Object?> get props => [selectedTabIndex, favorites, collections, isLoading];
+  List<Object?> get props => [favorites, sortType, isLoading];
 }

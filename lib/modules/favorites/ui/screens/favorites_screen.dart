@@ -34,14 +34,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // ── Header Row ──────────────────────────────────────────
-                    _buildHeader(context),
+                    _buildHeader(context, state),
 
                     const SizedBox(height: 20),
-
-                    // ── Tab Bar Capsule Selector ────────────────────────────
-                    _buildTabSelector(context, state),
-
-                    const SizedBox(height: 24),
 
                     // ── Scrollable Content Area ─────────────────────────────
                     Expanded(
@@ -52,25 +47,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  if (state.selectedTabIndex == 0) ...[
-                                    // Recipe Grid
-                                    if (state.favorites.isEmpty)
-                                      _buildEmptyState('No favorites yet', 'Bookmark recipes to see them here.')
-                                    else
-                                      _buildRecipesGrid(context, state),
-
-                                    const SizedBox(height: 24),
-
-                                    // Collections Row below recipes
-                                    if (state.collections.isNotEmpty)
-                                      _buildCollectionsGrid(context, state),
-                                  ] else ...[
-                                    // Collections Tab Only
-                                    if (state.collections.isEmpty)
-                                      _buildEmptyState('No collections yet', 'Create folders to organize your recipes.')
-                                    else
-                                      _buildCollectionsGrid(context, state),
-                                  ],
+                                  if (state.favorites.isEmpty)
+                                    _buildEmptyState('No favorites yet', 'Bookmark recipes to see them here.')
+                                  else
+                                    _buildRecipesGrid(context, state),
                                   const SizedBox(height: 24),
                                 ],
                               ),
@@ -86,7 +66,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, FavoritesState state) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -98,104 +78,121 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             color: const Color(0xFF1F1E1C),
           ),
         ),
-        // Tune list circle button
-        Container(
-          width: 40,
-          height: 40,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Color(0xFFF5F3EE),
-          ),
-          child: const Icon(
-            Icons.tune_rounded,
-            color: Color(0xFF1F1E1C),
-            size: 20,
+        // Tune list circle button (Filter/Sort)
+        GestureDetector(
+          onTap: () => _showSortMenu(context, state),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color(0xFFF5F3EE),
+            ),
+            child: const Icon(
+              Icons.tune_rounded,
+              color: Color(0xFF1F1E1C),
+              size: 20,
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildTabSelector(BuildContext context, FavoritesState state) {
-    return Container(
-      height: 48,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F3EE),
-        borderRadius: BorderRadius.circular(14),
+  void _showSortMenu(BuildContext context, FavoritesState state) {
+    final favoritesBloc = context.read<FavoritesBloc>();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: Row(
-        children: [
-          // All Tab
-          Expanded(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {
-                context.read<FavoritesBloc>().add(const ChangeFavoritesTab(0));
-              },
-              child: Container(
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
-                  color: state.selectedTabIndex == 0 ? Colors.white : Colors.transparent,
+                  color: const Color(0xFFEFEBE4),
                   borderRadius: BorderRadius.circular(10),
-                  boxShadow: state.selectedTabIndex == 0
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
                 ),
-                child: Center(
-                  child: Text(
-                    'All',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: state.selectedTabIndex == 0 ? FontWeight.w600 : FontWeight.w500,
-                      color: state.selectedTabIndex == 0 ? const Color(0xFF1F1E1C) : const Color(0xFF8C8A87),
-                    ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
+                child: Text(
+                  'Sort Favorites',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF1F1E1C),
                   ),
                 ),
               ),
-            ),
-          ),
-          // Collections Tab
-          Expanded(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {
-                context.read<FavoritesBloc>().add(const ChangeFavoritesTab(1));
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: state.selectedTabIndex == 1 ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: state.selectedTabIndex == 1
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Center(
-                  child: Text(
-                    'Collections',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: state.selectedTabIndex == 1 ? FontWeight.w600 : FontWeight.w500,
-                      color: state.selectedTabIndex == 1 ? const Color(0xFF1F1E1C) : const Color(0xFF8C8A87),
-                    ),
-                  ),
-                ),
+              const Divider(color: Color(0xFFEFEBE4)),
+              _buildSortOption(
+                context,
+                favoritesBloc,
+                label: 'Latest to Oldest',
+                type: FavoritesSortType.latestToOldest,
+                current: state.sortType,
               ),
-            ),
+              _buildSortOption(
+                context,
+                favoritesBloc,
+                label: 'Oldest to Latest',
+                type: FavoritesSortType.oldestToLatest,
+                current: state.sortType,
+              ),
+              _buildSortOption(
+                context,
+                favoritesBloc,
+                label: 'Alphabetical Order (A-Z)',
+                type: FavoritesSortType.alphabeticalAZ,
+                current: state.sortType,
+              ),
+              _buildSortOption(
+                context,
+                favoritesBloc,
+                label: 'Alphabetical Order (Z-A)',
+                type: FavoritesSortType.alphabeticalZA,
+                current: state.sortType,
+              ),
+              const SizedBox(height: 12),
+            ],
           ),
-        ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSortOption(
+    BuildContext context,
+    FavoritesBloc favoritesBloc, {
+    required String label,
+    required FavoritesSortType type,
+    required FavoritesSortType current,
+  }) {
+    final isSelected = type == current;
+    return ListTile(
+      title: Text(
+        label,
+        style: GoogleFonts.poppins(
+          fontSize: 14.5,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+          color: isSelected ? const Color(0xFFF47B20) : const Color(0xFF1F1E1C),
+        ),
       ),
+      trailing: isSelected
+          ? const Icon(Icons.check_rounded, color: Color(0xFFF47B20))
+          : null,
+      onTap: () {
+        favoritesBloc.add(SortFavorites(type));
+        Navigator.pop(context);
+      },
     );
   }
 
@@ -373,100 +370,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 ),
               ],
             ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildCollectionsGrid(BuildContext context, FavoritesState state) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        mainAxisExtent: 78,
-      ),
-      itemCount: state.collections.length,
-      itemBuilder: (context, index) {
-        final col = state.collections[index];
-
-        // Map colors for custom look
-        Color folderColor;
-        if (col.badgeHexColor == 0xFFFFF2D9) {
-          folderColor = const Color(0xFFF47B20); // Orange folder
-        } else if (col.badgeHexColor == 0xFFEAF5E3) {
-          folderColor = const Color(0xFF4CAF50); // Green folder
-        } else {
-          folderColor = const Color(0xFF9C27B0); // Purple folder fallback
-        }
-
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF3A2818).withValues(alpha: 0.03),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              // Folder icon circular background
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(col.badgeHexColor),
-                ),
-                child: Icon(
-                  Icons.folder_rounded,
-                  color: folderColor,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Details
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      col.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF1F1E1C),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${col.recipeCount} recipes',
-                      style: GoogleFonts.poppins(
-                        fontSize: 10.5,
-                        color: const Color(0xFF8C8A87),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Color(0xFFB5B3B0),
-                size: 18,
-              ),
-            ],
           ),
         );
       },

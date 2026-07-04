@@ -247,6 +247,15 @@ class SupabaseDataSource {
         .toList();
   }
 
+  Future<List<Map<String, dynamic>>> getFavoritesWithDate(String userId) async {
+    final response = await _client
+        .from('favorites')
+        .select('created_at, recipes(*)')
+        .eq('user_id', userId)
+        .order('created_at', ascending: false);
+    return (response as List).map((json) => json as Map<String, dynamic>).toList();
+  }
+
   Future<void> addFavorite(String userId, String recipeId) async {
     await _client.from('favorites').upsert({
       'user_id': userId,

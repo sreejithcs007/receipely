@@ -44,6 +44,10 @@ class UserRepository {
     return await _dataSource.getFavorites(userId);
   }
 
+  Future<List<Map<String, dynamic>>> getFavoritesWithDate(String userId) async {
+    return await _dataSource.getFavoritesWithDate(userId);
+  }
+
   Future<void> addFavorite(String userId, String recipeId) async {
     await _dataSource.addFavorite(userId, recipeId);
   }
