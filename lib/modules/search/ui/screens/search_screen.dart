@@ -621,17 +621,26 @@ class _SearchScreenState extends State<SearchScreen> {
                       Positioned(
                         top: 10,
                         right: 10,
-                        child: Container(
-                          width: 28,
-                          height: 28,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                          ),
-                          child: const Icon(
-                            Icons.favorite_border_rounded,
-                            color: Color(0xFF8C8A87),
-                            size: 15,
+                        child: GestureDetector(
+                          onTap: () {
+                            context.read<SearchBloc>().add(ToggleFavoriteRecipeSearchResult(item.id));
+                          },
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                            ),
+                            child: Icon(
+                              state.favoriteRecipeIds.contains(item.id)
+                                  ? Icons.favorite
+                                  : Icons.favorite_border_rounded,
+                              color: state.favoriteRecipeIds.contains(item.id)
+                                  ? Colors.red
+                                  : const Color(0xFF8C8A87),
+                              size: 15,
+                            ),
                           ),
                         ),
                       ),

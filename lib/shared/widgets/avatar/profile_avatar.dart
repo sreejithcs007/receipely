@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../utils/extension/context_extension.dart';
 
 class ProfileAvatar extends StatelessWidget {
@@ -38,9 +39,23 @@ class ProfileAvatar extends StatelessWidget {
     );
 
     if (imageUrl != null && imageUrl!.isNotEmpty) {
-      avatarChild = imageUrl!.startsWith('http')
+      String resolvedUrl = imageUrl!;
+      final isAsset = resolvedUrl.startsWith('assets/');
+
+      if (!resolvedUrl.startsWith('http') && !isAsset) {
+        try {
+          final parts = resolvedUrl.split('/');
+          if (parts.length >= 2) {
+            final bucket = parts[0];
+            final path = parts.sublist(1).join('/');
+            resolvedUrl = Supabase.instance.client.storage.from(bucket).getPublicUrl(path);
+          }
+        } catch (_) {}
+      }
+
+      avatarChild = !isAsset
           ? CachedNetworkImage(
-              imageUrl: imageUrl!,
+              imageUrl: resolvedUrl,
               imageBuilder:
                   (context, imageProvider) => Container(
                     decoration: BoxDecoration(
@@ -64,13 +79,21 @@ class ProfileAvatar extends StatelessWidget {
                       ),
                     ),
                   ),
-              errorWidget: (context, url, error) => avatarChild,
+              errorWidget: (context, url, error) => Center(
+                child: Text(
+                  _initials,
+                  style: context.typography.textMd.bold.copyWith(
+                    color: context.primary.c500,
+                    fontSize: radius * 0.8,
+                  ),
+                ),
+              ),
             )
           : Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 image: DecorationImage(
-                  image: AssetImage(imageUrl!),
+                  image: AssetImage(resolvedUrl),
                   fit: BoxFit.cover,
                 ),
               ),

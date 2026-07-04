@@ -14,6 +14,7 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
           query: '',
           recentSearches: [],
           results: [],
+          favoriteRecipeIds: [],
           isLoading: false,
         )) {
     on<LoadSearchPage>(_onLoadSearchPage);
@@ -22,6 +23,7 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
     on<RemoveRecentSearch>(_onRemoveRecentSearch);
     on<ClearRecentSearches>(_onClearRecentSearches);
     on<SelectFilter>(_onSelectFilter);
+    on<ToggleFavoriteRecipeSearchResult>(_onToggleFavoriteRecipeSearchResult);
   }
 
   Future<void> _onLoadSearchPage(LoadSearchPage event, Emitter<SearchState> emit) async {
@@ -29,8 +31,13 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
     try {
       final user = _userRepository.getCurrentUser();
       List<String> searches = [];
+      List<String> favoriteRecipeIds = [];
       if (user != null) {
         searches = await _userRepository.getSearchHistory(user.id);
+        try {
+          final favorites = await _userRepository.getFavorites(user.id);
+          favoriteRecipeIds = favorites.map((r) => r.id).toList();
+        } catch (_) {}
       }
       
       final recipes = await _recipeRepository.getRecipes();
@@ -39,6 +46,7 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
       emit(state.copyWith(
         recentSearches: searches,
         results: results,
+        favoriteRecipeIds: favoriteRecipeIds,
         isLoading: false,
       ));
     } catch (_) {
@@ -57,12 +65,14 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
         maxTimeMin = 30;
       }
 
-      final recipes = await _recipeRepository.getRecipes(
-        query: event.query,
-        cuisine: state.cuisineFilter,
-        dietary: state.dietFilter != null ? [state.dietFilter!] : null,
-        maxTimeMin: maxTimeMin,
-      );
+      final recipes = (event.query.toLowerCase() == 'trending')
+          ? await _recipeRepository.getTrendingRecipes()
+          : await _recipeRepository.getRecipes(
+              query: event.query,
+              cuisine: state.cuisineFilter,
+              dietary: state.dietFilter != null ? [state.dietFilter!] : null,
+              maxTimeMin: maxTimeMin,
+            );
       final results = _mapToSearchResults(recipes);
       emit(state.copyWith(results: results, isLoading: false));
 
@@ -151,12 +161,14 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
         maxTimeMin = 30;
       }
 
-      final recipes = await _recipeRepository.getRecipes(
-        query: state.query,
-        cuisine: cuisine,
-        dietary: diet != null ? [diet] : null,
-        maxTimeMin: maxTimeMin,
-      );
+      final recipes = (state.query.toLowerCase() == 'trending')
+          ? await _recipeRepository.getTrendingRecipes()
+          : await _recipeRepository.getRecipes(
+              query: state.query,
+              cuisine: cuisine,
+              dietary: diet != null ? [diet] : null,
+              maxTimeMin: maxTimeMin,
+            );
       final results = _mapToSearchResults(recipes);
       emit(state.copyWith(results: results, isLoading: false));
 
@@ -191,5 +203,32 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
       cuisine: r.difficulty,
       diet: r.servings,
     )).toList();
+  }
+
+  Future<void> _onToggleFavoriteRecipeSearchResult(
+    ToggleFavoriteRecipeSearchResult event,
+    Emitter<SearchState> emit,
+  ) async {
+    final isFavorited = state.favoriteRecipeIds.contains(event.recipeId);
+    final updatedFavorites = List<String>.from(state.favoriteRecipeIds);
+
+    if (isFavorited) {
+      updatedFavorites.remove(event.recipeId);
+    } else {
+      updatedFavorites.add(event.recipeId);
+    }
+
+    emit(state.copyWith(favoriteRecipeIds: updatedFavorites));
+
+    final user = _userRepository.getCurrentUser();
+    if (user != null) {
+      try {
+        if (isFavorited) {
+          await _userRepository.removeFavorite(user.id, event.recipeId);
+        } else {
+          await _userRepository.addFavorite(user.id, event.recipeId);
+        }
+      } catch (_) {}
+    }
   }
 }

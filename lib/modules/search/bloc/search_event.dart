@@ -43,3 +43,11 @@ class SelectFilter extends SearchEvent {
   @override
   List<Object?> get props => [filterType, value];
 }
+
+class ToggleFavoriteRecipeSearchResult extends SearchEvent {
+  final String recipeId;
+  const ToggleFavoriteRecipeSearchResult(this.recipeId);
+
+  @override
+  List<Object?> get props => [recipeId];
+}

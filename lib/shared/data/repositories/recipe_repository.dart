@@ -82,7 +82,6 @@ class RecipeRepository {
   }
 
   Future<List<RecipeModel>> getTrendingRecipes() async {
-    print('hello == i am at line 79 of receipe repos');
     return await _dataSource.getTrendingRecipes();
   }
 

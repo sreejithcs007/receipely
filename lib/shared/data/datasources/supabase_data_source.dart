@@ -200,6 +200,16 @@ class SupabaseDataSource {
         .eq('id', userId);
   }
 
+  Future<void> createUserProfileIfMissing(String userId, String email, String name) async {
+    await _client.from('users').upsert({
+      'id': userId,
+      'email': email,
+      'name': name,
+      'chef_level': 'Home Chef',
+      'avatar_url': 'user-avatars/default.png',
+    });
+  }
+
   Future<String?> updateUserAvatar(String userId, String filePath) async {
     final fileBytes = await io.File(filePath).readAsBytes();
     final fileName = '$userId-${DateTime.now().millisecondsSinceEpoch}.jpg';

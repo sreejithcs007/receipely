@@ -28,6 +28,10 @@ class UserRepository {
     return await _dataSource.getUserProfile(userId);
   }
 
+  Future<void> createUserProfileIfMissing(String userId, String email, String name) async {
+    await _dataSource.createUserProfileIfMissing(userId, email, name);
+  }
+
   Future<void> updateUserProfile(String userId, {required String name, required String title}) async {
     await _dataSource.updateUserProfile(userId, name: name, title: title);
   }

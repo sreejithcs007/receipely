@@ -18,17 +18,35 @@ class HomeLoaded extends HomeState {
   final List<CategoryModel> categories;
   final List<RecipeModel> featuredRecipes;
   final List<RecipeModel> trendingRecipes;
+  final List<String> favoriteRecipeIds;
   final UserProfileModel? userProfile;
 
   const HomeLoaded({
     required this.categories,
     required this.featuredRecipes,
     required this.trendingRecipes,
+    required this.favoriteRecipeIds,
     this.userProfile,
   });
 
+  HomeLoaded copyWith({
+    List<CategoryModel>? categories,
+    List<RecipeModel>? featuredRecipes,
+    List<RecipeModel>? trendingRecipes,
+    List<String>? favoriteRecipeIds,
+    UserProfileModel? userProfile,
+  }) {
+    return HomeLoaded(
+      categories: categories ?? this.categories,
+      featuredRecipes: featuredRecipes ?? this.featuredRecipes,
+      trendingRecipes: trendingRecipes ?? this.trendingRecipes,
+      favoriteRecipeIds: favoriteRecipeIds ?? this.favoriteRecipeIds,
+      userProfile: userProfile ?? this.userProfile,
+    );
+  }
+
   @override
-  List<Object?> get props => [categories, featuredRecipes, trendingRecipes, userProfile];
+  List<Object?> get props => [categories, featuredRecipes, trendingRecipes, favoriteRecipeIds, userProfile];
 }
 
 class HomeError extends HomeState {

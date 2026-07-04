@@ -174,6 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       reviews: r.reviews.toString(),
                       cookTime: r.cookTime,
                       calories: r.calories,
+                      isFavorited: state.favoriteRecipeIds.contains(r.id),
                     ))
                 .toList();
 
@@ -204,12 +205,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 28),
 
                       // ── Featured Hero Card ──────────────────────────────────────
-                      _buildFeaturedCard(featuredRecipe),
+                      _buildFeaturedCard(
+                        context,
+                        featuredRecipe,
+                        isFavorited: featuredRecipe != null &&
+                            state.favoriteRecipeIds.contains(featuredRecipe.id),
+                      ),
 
                       const SizedBox(height: 32),
 
                       // ── Trending Recipes Section ────────────────────────────────
-                      _buildTrendingSection(trendingRecipes),
+                      _buildTrendingSection(context, trendingRecipes),
                     ],
                   ),
                 ),
@@ -223,45 +229,56 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHeader(UserProfileModel? profile) {
-    final displayName = profile?.name.split(' ').first ?? 'Sarah';
+    final nameToSplit = (profile?.name != null && profile!.name.trim().isNotEmpty)
+        ? profile.name
+        : (profile?.email != null && profile!.email.isNotEmpty)
+            ? profile.email.split('@').first
+            : 'Sarah';
+    final displayName = nameToSplit.split(' ').first;
     final avatarUrl = profile?.avatarUrl ?? '';
     return Row(
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            RichText(
-              text: TextSpan(
-                text: 'Good morning, ',
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF1F1E1C),
-                ),
-                children: [
-                  TextSpan(
-                    text: displayName,
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFFF47B20),
-                    ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RichText(
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                text: TextSpan(
+                  text: 'Good morning, ',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF1F1E1C),
                   ),
-                ],
+                  children: [
+                    TextSpan(
+                      text: displayName,
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFFF47B20),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              "What's cooking today?",
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: const Color(0xFF8C8A87),
+              const SizedBox(height: 4),
+              Text(
+                "What's cooking today?",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF8C8A87),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-        const Spacer(),
+        const SizedBox(width: 16),
         ProfileAvatar(
           name: displayName,
           imageUrl: avatarUrl.isNotEmpty ? avatarUrl : AppImages.chefAvatar,
@@ -305,19 +322,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   left: BorderSide(color: Color(0xFFEFEBE4), width: 1),
                 ),
               ),
-              child: Row(
+              child: const Row(
                 children: [
-                  const SizedBox(width: 12),
-                  Image.asset(
-                    'assets/icons/actions/filter.png',
-                    height: 20,
-                    width: 20,
-                    color: const Color(0xFF8C8A87),
-                    errorBuilder: (_, __, ___) => const Icon(
-                      Icons.tune_rounded,
-                      color: Color(0xFF8C8A87),
-                      size: 20,
-                    ),
+                  SizedBox(width: 12),
+                  Icon(
+                    Icons.tune_rounded,
+                    color: Color(0xFF8C8A87),
+                    size: 20,
                   ),
                 ],
               ),
@@ -383,7 +394,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildFeaturedCard(RecipeModel? recipe) {
+  Widget _buildFeaturedCard(BuildContext context, RecipeModel? recipe, {required bool isFavorited}) {
     final title = recipe?.title ?? 'Creamy Garlic\nChicken Pasta';
     final description = recipe?.description ?? 'Rich, creamy, and full of flavor. Ready in under 30 minutes!';
     final cookTime = recipe?.cookTime ?? '30 min';
@@ -476,17 +487,24 @@ class _HomeScreenState extends State<HomeScreen> {
           Positioned(
             top: 16,
             right: 16,
-            child: Container(
-              width: 38,
-              height: 38,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-              ),
-              child: const Icon(
-                Icons.bookmark_outline_rounded,
-                color: Color(0xFF1F1E1C),
-                size: 20,
+            child: InkWell(
+              onTap: () {
+                if (recipe != null) {
+                  context.read<HomeBloc>().add(ToggleFavoriteRecipe(recipe.id));
+                }
+              },
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                ),
+                child: Icon(
+                  isFavorited ? Icons.favorite : Icons.favorite_border,
+                  color: isFavorited ? Colors.red : const Color(0xFF1F1E1C),
+                  size: 20,
+                ),
               ),
             ),
           ),
@@ -598,7 +616,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  Widget _buildTrendingSection(List<RecipeItem> trendingRecipes) {
+  Widget _buildTrendingSection(BuildContext context, List<RecipeItem> trendingRecipes) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -614,7 +632,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             GestureDetector(
-              onTap: () => const CategoriesRoute().push(context),
+              onTap: () => const SearchRoute(q: 'trending').go(context),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -649,7 +667,7 @@ class _HomeScreenState extends State<HomeScreen> {
               final item = trendingRecipes[index];
               return GestureDetector(
                 onTap: () => RecipeDetailRoute(recipeId: item.id).push(context),
-                child: _buildTrendingCard(item),
+                child: _buildTrendingCard(context, item),
               );
             },
           ),
@@ -658,7 +676,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTrendingCard(RecipeItem item) {
+  Widget _buildTrendingCard(BuildContext context, RecipeItem item) {
     return Container(
       width: 210,
       decoration: BoxDecoration(
@@ -705,17 +723,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 Positioned(
                   top: 12,
                   right: 12,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white,
-                    ),
-                    child: const Icon(
-                      Icons.bookmark_outline_rounded,
-                      color: Color(0xFF8C8A87),
-                      size: 18,
+                  child: GestureDetector(
+                    onTap: () {
+                      context.read<HomeBloc>().add(ToggleFavoriteRecipe(item.id));
+                    },
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                      ),
+                      child: Icon(
+                        item.isFavorited ? Icons.favorite : Icons.favorite_border,
+                        color: item.isFavorited ? Colors.red : const Color(0xFF8C8A87),
+                        size: 18,
+                      ),
                     ),
                   ),
                 ),
@@ -843,6 +866,7 @@ class RecipeItem {
   final String reviews;
   final String cookTime;
   final String calories;
+  final bool isFavorited;
 
   RecipeItem({
     required this.id,
@@ -852,5 +876,6 @@ class RecipeItem {
     required this.reviews,
     required this.cookTime,
     required this.calories,
+    required this.isFavorited,
   });
 }

@@ -32,6 +32,7 @@ class SearchState extends Equatable {
   final String? dietFilter;
   final String? timeFilter;
   final List<RecipeSearchResult> results;
+  final List<String> favoriteRecipeIds;
   final bool isLoading;
 
   const SearchState({
@@ -41,6 +42,7 @@ class SearchState extends Equatable {
     this.dietFilter,
     this.timeFilter,
     required this.results,
+    required this.favoriteRecipeIds,
     required this.isLoading,
   });
 
@@ -51,6 +53,7 @@ class SearchState extends Equatable {
     String? Function()? dietFilter,
     String? Function()? timeFilter,
     List<RecipeSearchResult>? results,
+    List<String>? favoriteRecipeIds,
     bool? isLoading,
   }) {
     return SearchState(
@@ -60,6 +63,7 @@ class SearchState extends Equatable {
       dietFilter: dietFilter != null ? dietFilter() : this.dietFilter,
       timeFilter: timeFilter != null ? timeFilter() : this.timeFilter,
       results: results ?? this.results,
+      favoriteRecipeIds: favoriteRecipeIds ?? this.favoriteRecipeIds,
       isLoading: isLoading ?? this.isLoading,
     );
   }
@@ -72,6 +76,7 @@ class SearchState extends Equatable {
         dietFilter,
         timeFilter,
         results,
+        favoriteRecipeIds,
         isLoading,
       ];
 }
