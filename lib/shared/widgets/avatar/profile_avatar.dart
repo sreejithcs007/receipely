@@ -38,7 +38,12 @@ class ProfileAvatar extends StatelessWidget {
       ),
     );
 
-    if (imageUrl != null && imageUrl!.isNotEmpty) {
+    final hasPhoto = imageUrl != null &&
+        imageUrl!.isNotEmpty &&
+        !imageUrl!.contains('default.png') &&
+        !imageUrl!.contains('chef_avatar.png');
+
+    if (hasPhoto) {
       String resolvedUrl = imageUrl!;
       final isAsset = resolvedUrl.startsWith('assets/');
 

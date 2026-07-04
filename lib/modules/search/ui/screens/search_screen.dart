@@ -81,9 +81,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                   const SizedBox(height: 24),
                                 ],
 
-                                // Trending Section
-                                _buildTrendingHeader(),
-                                const SizedBox(height: 12),
+                                // Trending List
                                 _buildTrendingList(context),
                                 const SizedBox(height: 24),
 
@@ -165,23 +163,6 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-            ),
-          ),
-          // Voice mic circle container
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFFF5F3EE),
-              ),
-              child: const Icon(
-                Icons.mic_none_rounded,
-                color: Color(0xFF8C8A87),
-                size: 20,
               ),
             ),
           ),
@@ -270,30 +251,6 @@ class _SearchScreenState extends State<SearchScreen> {
           );
         },
       ),
-    );
-  }
-
-  Widget _buildTrendingHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          'Trending',
-          style: GoogleFonts.poppins(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF1F1E1C),
-          ),
-        ),
-        Text(
-          'See all',
-          style: GoogleFonts.poppins(
-            fontSize: 13.5,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFFF47B20),
-          ),
-        ),
-      ],
     );
   }
 

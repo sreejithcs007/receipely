@@ -195,7 +195,6 @@ class MainLayout extends StatelessWidget {
                   label: 'Search',
                   isSelected: selectedIndex == 1,
                 ),
-                _buildCenterPlusButton(context),
                 _buildNavItem(
                   context,
                   index: 3,
@@ -256,39 +255,6 @@ class MainLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildCenterPlusButton(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => _onTap(context, 2),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFFF47B20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x3DF47B20),
-                    blurRadius: 8,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.add,
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   int _calculateSelectedIndex(BuildContext context) {
     final String location = GoRouterState.of(context).uri.toString();

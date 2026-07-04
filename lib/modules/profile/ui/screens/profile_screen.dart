@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../router/routes.dart';
 import '../../../../shared/core/constants/asset_constants.dart';
 import '../../../../shared/di/service_locator.dart';
@@ -91,19 +92,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
                 child: ClipOval(
-                  child: state.imageUrl.startsWith('http')
-                      ? Image.network(
-                          state.imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Image.asset(
-                            AppImages.chefAvatar,
+                  child: () {
+                    final hasPhoto = state.imageUrl.isNotEmpty &&
+                        !state.imageUrl.contains('default.png') &&
+                        !state.imageUrl.contains('chef_avatar.png');
+
+                    if (!hasPhoto) {
+                      return _buildInitialsPlaceholder(state.name);
+                    }
+
+                    String resolvedUrl = state.imageUrl;
+                    final isAsset = resolvedUrl.startsWith('assets/');
+                    if (resolvedUrl.isNotEmpty && !resolvedUrl.startsWith('http') && !isAsset) {
+                      try {
+                        final parts = resolvedUrl.split('/');
+                        if (parts.length >= 2) {
+                          final bucket = parts[0];
+                          final path = parts.sublist(1).join('/');
+                          resolvedUrl = Supabase.instance.client.storage.from(bucket).getPublicUrl(path);
+                        }
+                      } catch (_) {}
+                    }
+
+                    return !isAsset && resolvedUrl.isNotEmpty
+                        ? Image.network(
+                            resolvedUrl,
                             fit: BoxFit.cover,
-                          ),
-                        )
-                      : Image.asset(
-                          state.imageUrl.isNotEmpty ? state.imageUrl : AppImages.chefAvatar,
-                          fit: BoxFit.cover,
-                        ),
+                            errorBuilder: (_, __, ___) => _buildInitialsPlaceholder(state.name),
+                          )
+                        : Image.asset(
+                            resolvedUrl.isNotEmpty ? resolvedUrl : AppImages.chefAvatar,
+                            fit: BoxFit.cover,
+                          );
+                  }(),
                 ),
               ),
               // Floating Edit Pencil button
@@ -260,11 +281,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildAchievementsSection() {
     final achievements = [
-      _AchievementItem('First Recipe', Icons.restaurant_rounded, 0xFFEAF5E3, 0xFF4CAF50),
       _AchievementItem('Home Cook', Icons.soup_kitchen_rounded, 0xFFFDECEB, 0xFFE91E63),
-      _AchievementItem('Week Streak', Icons.military_tech_rounded, 0xFFFFF2D9, 0xFFF47B20, count: 3),
-      _AchievementItem('Baking Star', Icons.cake_rounded, 0xFFFAF0F5, 0xFF9C27B0),
-      _AchievementItem('Recipe Keeper', Icons.book_rounded, 0xFFE2F3E3, 0xFF2E7D32),
     ];
 
     return Column(
@@ -331,33 +348,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           size: 24,
                         ),
                       ),
-                      // Overlay Streak Count Badge
-                      if (ach.count != null)
-                        Positioned(
-                          top: -2,
-                          right: -2,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white,
-                              boxShadow: [
-                                BoxShadow(color: Colors.black12, blurRadius: 3),
-                              ],
-                            ),
-                            constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
-                            child: Center(
-                              child: Text(
-                                '${ach.count}',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFFF47B20),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -396,14 +386,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
-            _buildActionItem(
-              icon: Icons.menu_book_rounded,
-              title: 'My Recipes',
-              onTap: () {
-                const ShoppingListRoute().push(context);
-              },
-            ),
-            const Divider(color: Color(0xFFEFEBE4), height: 1),
             _buildActionItem(
               icon: Icons.settings_outlined,
               title: 'Settings',
@@ -605,6 +587,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ],
     );
   }
+
+  Widget _buildInitialsPlaceholder(String name) {
+    final initials = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : 'S';
+    return Container(
+      color: const Color(0xFFFFF2D9),
+      alignment: Alignment.center,
+      child: Text(
+        initials,
+        style: GoogleFonts.playfairDisplay(
+          fontSize: 48,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFFF47B20),
+        ),
+      ),
+    );
+  }
 }
 
 class _AchievementItem {
@@ -612,7 +610,6 @@ class _AchievementItem {
   final IconData icon;
   final int bgHexColor;
   final int iconHexColor;
-  final int? count;
 
-  _AchievementItem(this.name, this.icon, this.bgHexColor, this.iconHexColor, {this.count});
+  _AchievementItem(this.name, this.icon, this.bgHexColor, this.iconHexColor);
 }
