@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 import 'app_typography.dart';
 
@@ -89,6 +90,19 @@ class AppTheme {
       brightness: Brightness.light,
       primaryColor: AppColors.primary.c500,
       scaffoldBackgroundColor: AppColors.white.c50,
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: const Color(0xFFD97706),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        contentTextStyle: GoogleFonts.poppins(
+          color: Colors.white,
+          fontSize: 13.5,
+          fontWeight: FontWeight.w500,
+        ),
+        elevation: 4,
+      ),
       extensions: [
         AppColorsExtension.light(),
         AppTypographyExtension.main(),
@@ -102,6 +116,19 @@ class AppTheme {
       brightness: Brightness.dark,
       primaryColor: AppColors.primary.c500,
       scaffoldBackgroundColor: AppColors.black.c900,
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: const Color(0xFFD97706),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        contentTextStyle: GoogleFonts.poppins(
+          color: Colors.white,
+          fontSize: 13.5,
+          fontWeight: FontWeight.w500,
+        ),
+        elevation: 4,
+      ),
       extensions: [
         AppColorsExtension.dark(),
         AppTypographyExtension.main(),
