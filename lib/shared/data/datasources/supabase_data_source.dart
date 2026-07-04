@@ -10,11 +10,21 @@ class SupabaseDataSource {
   SupabaseDataSource(this._client);
 
   // ── Authentication ──────────────────────────────────────────────────
-  Future<AuthResponse> signIn({required String email, required String password}) async {
-    return await _client.auth.signInWithPassword(email: email, password: password);
+  Future<AuthResponse> signIn({
+    required String email,
+    required String password,
+  }) async {
+    return await _client.auth.signInWithPassword(
+      email: email,
+      password: password,
+    );
   }
 
-  Future<AuthResponse> signUp({required String email, required String password, required String name}) async {
+  Future<AuthResponse> signUp({
+    required String email,
+    required String password,
+    required String name,
+  }) async {
     return await _client.auth.signUp(
       email: email,
       password: password,
@@ -33,7 +43,9 @@ class SupabaseDataSource {
   // ── Categories & Recipes ─────────────────────────────────────────────
   Future<List<CategoryModel>> getCategories() async {
     final response = await _client.from('categories').select();
-    return (response as List).map((json) => CategoryModel.fromJson(json)).toList();
+    return (response as List)
+        .map((json) => CategoryModel.fromJson(json))
+        .toList();
   }
 
   Future<List<RecipeModel>> getRecipes({
@@ -50,7 +62,8 @@ class SupabaseDataSource {
     int limit = 20,
     int offset = 0,
   }) async {
-    final hasFilters = (cuisine != null && cuisine.isNotEmpty) ||
+    final hasFilters =
+        (cuisine != null && cuisine.isNotEmpty) ||
         (difficulty != null && difficulty.isNotEmpty) ||
         maxTimeMin != null ||
         maxCalories != null ||
@@ -61,38 +74,56 @@ class SupabaseDataSource {
     if ((query != null && query.isNotEmpty) || hasFilters) {
       String? categoryId;
       if (category != null && category.isNotEmpty) {
-        final catResp = await _client.from('categories').select('id').eq('name', category).maybeSingle();
+        final catResp = await _client
+            .from('categories')
+            .select('id')
+            .eq('name', category)
+            .maybeSingle();
         if (catResp != null) {
           categoryId = catResp['id'] as String;
         }
       }
 
-      final response = await _client.rpc('search_recipes', params: {
-        'p_query': query,
-        'p_category_id': categoryId,
-        'p_cuisine': cuisine,
-        'p_difficulty': difficulty,
-        'p_max_time_min': maxTimeMin,
-        'p_max_calories': maxCalories,
-        'p_min_rating': minRating,
-        'p_meal_type': mealType,
-        'p_dietary': dietary,
-        'p_sort_by': sortBy,
-        'p_limit': limit,
-        'p_offset': offset,
-      });
+      final response = await _client.rpc(
+        'search_recipes',
+        params: {
+          'p_query': query,
+          'p_category_id': categoryId,
+          'p_cuisine': cuisine,
+          'p_difficulty': difficulty,
+          'p_max_time_min': maxTimeMin,
+          'p_max_calories': maxCalories,
+          'p_min_rating': minRating,
+          'p_meal_type': mealType,
+          'p_dietary': dietary,
+          'p_sort_by': sortBy,
+          'p_limit': limit,
+          'p_offset': offset,
+        },
+      );
 
-      return (response as List).map((json) => RecipeModel.fromJson(json)).toList();
+      return (response as List)
+          .map((json) => RecipeModel.fromJson(json))
+          .toList();
     }
 
     var request = _client.from('recipes').select();
-    
+
     if (category != null && category.isNotEmpty) {
-      final catResp = await _client.from('categories').select('id').eq('name', category).maybeSingle();
+      final catResp = await _client
+          .from('categories')
+          .select('id')
+          .eq('name', category)
+          .maybeSingle();
       if (catResp != null) {
         final catId = catResp['id'] as String;
-        final junctions = await _client.from('recipe_categories').select('recipe_id').eq('category_id', catId);
-        final recipeIds = (junctions as List).map((j) => j['recipe_id'] as String).toList();
+        final junctions = await _client
+            .from('recipe_categories')
+            .select('recipe_id')
+            .eq('category_id', catId);
+        final recipeIds = (junctions as List)
+            .map((j) => j['recipe_id'] as String)
+            .toList();
         if (recipeIds.isNotEmpty) {
           request = request.inFilter('id', recipeIds);
         } else {
@@ -102,17 +133,30 @@ class SupabaseDataSource {
     }
 
     final response = await request;
-    return (response as List).map((json) => RecipeModel.fromJson(json)).toList();
+    return (response as List)
+        .map((json) => RecipeModel.fromJson(json))
+        .toList();
   }
 
   Future<List<RecipeModel>> getFeaturedRecipes() async {
-    final response = await _client.from('recipes').select().eq('is_featured', true);
-    return (response as List).map((json) => RecipeModel.fromJson(json)).toList();
+    final response = await _client
+        .from('recipes')
+        .select()
+        .eq('is_featured', true);
+    return (response as List)
+        .map((json) => RecipeModel.fromJson(json))
+        .toList();
   }
 
   Future<List<RecipeModel>> getTrendingRecipes() async {
-    final response = await _client.from('recipes').select().eq('is_trending', true);
-    return (response as List).map((json) => RecipeModel.fromJson(json)).toList();
+    // final response = await _client.from('recipes').select().eq('is_trending', true);
+    final response = await _client
+        .from('recipes')
+        .select()
+        .eq('is_trending', true);
+    return (response as List)
+        .map((json) => RecipeModel.fromJson(json))
+        .toList();
   }
 
   Future<List<String>> getRecipeIngredients(String recipeId) async {
@@ -130,44 +174,67 @@ class SupabaseDataSource {
         .select('step_content')
         .eq('recipe_id', recipeId)
         .order('step_number', ascending: true);
-    return (response as List).map((json) => json['step_content'] as String).toList();
+    return (response as List)
+        .map((json) => json['step_content'] as String)
+        .toList();
   }
 
   // ── User Specific Profile ───────────────────────────────────────────
   Future<UserProfileModel> getUserProfile(String userId) async {
-    final response = await _client.from('users').select().eq('id', userId).single();
+    final response = await _client
+        .from('users')
+        .select()
+        .eq('id', userId)
+        .single();
     return UserProfileModel.fromJson(response);
   }
 
-  Future<void> updateUserProfile(String userId, {required String name, required String title}) async {
-    await _client.from('users').update({
-      'name': name,
-      'chef_level': title,
-    }).eq('id', userId);
+  Future<void> updateUserProfile(
+    String userId, {
+    required String name,
+    required String title,
+  }) async {
+    await _client
+        .from('users')
+        .update({'name': name, 'chef_level': title})
+        .eq('id', userId);
   }
 
   Future<String?> updateUserAvatar(String userId, String filePath) async {
     final fileBytes = await io.File(filePath).readAsBytes();
     final fileName = '$userId-${DateTime.now().millisecondsSinceEpoch}.jpg';
-    await _client.storage.from('user-avatars').uploadBinary(
+    await _client.storage
+        .from('user-avatars')
+        .uploadBinary(
           fileName,
           fileBytes,
-          fileOptions: const FileOptions(contentType: 'image/jpeg', upsert: true),
+          fileOptions: const FileOptions(
+            contentType: 'image/jpeg',
+            upsert: true,
+          ),
         );
-    
-    final avatarUrl = _client.storage.from('user-avatars').getPublicUrl(fileName);
-    
-    await _client.from('users').update({
-      'avatar_url': avatarUrl,
-    }).eq('id', userId);
-    
+
+    final avatarUrl = _client.storage
+        .from('user-avatars')
+        .getPublicUrl(fileName);
+
+    await _client
+        .from('users')
+        .update({'avatar_url': avatarUrl})
+        .eq('id', userId);
+
     return avatarUrl;
   }
 
   // ── Favorites ────────────────────────────────────────────────────────
   Future<List<RecipeModel>> getFavorites(String userId) async {
-    final response = await _client.from('favorites').select('recipes(*)').eq('user_id', userId);
-    return (response as List).map((json) => RecipeModel.fromJson(json['recipes'])).toList();
+    final response = await _client
+        .from('favorites')
+        .select('recipes(*)')
+        .eq('user_id', userId);
+    return (response as List)
+        .map((json) => RecipeModel.fromJson(json['recipes']))
+        .toList();
   }
 
   Future<void> addFavorite(String userId, String recipeId) async {
@@ -178,7 +245,11 @@ class SupabaseDataSource {
   }
 
   Future<void> removeFavorite(String userId, String recipeId) async {
-    await _client.from('favorites').delete().eq('user_id', userId).eq('recipe_id', recipeId);
+    await _client
+        .from('favorites')
+        .delete()
+        .eq('user_id', userId)
+        .eq('recipe_id', recipeId);
   }
 
   // ── Recently Viewed ──────────────────────────────────────────────────
@@ -189,7 +260,9 @@ class SupabaseDataSource {
         .eq('user_id', userId)
         .order('viewed_at', ascending: false)
         .limit(10);
-    return (response as List).map((json) => RecipeModel.fromJson(json['recipes'])).toList();
+    return (response as List)
+        .map((json) => RecipeModel.fromJson(json['recipes']))
+        .toList();
   }
 
   Future<void> addRecentlyViewed(String userId, String recipeId) async {
@@ -202,43 +275,53 @@ class SupabaseDataSource {
 
   // ── Search History & Advanced Search ─────────────────────────────────
   Future<List<String>> getSearchHistory(String userId) async {
-    final response = await _client.rpc('get_recent_searches', params: {
-      'p_user_id': userId,
-      'p_limit': 10,
-    });
+    final response = await _client.rpc(
+      'get_recent_searches',
+      params: {'p_user_id': userId, 'p_limit': 10},
+    );
     return (response as List).map((json) => json['query'] as String).toList();
   }
 
   Future<void> addSearchHistory(String userId, String query) async {
-    await _client.rpc('upsert_search_history', params: {
-      'p_user_id': userId,
-      'p_query': query,
-    });
+    await _client.rpc(
+      'upsert_search_history',
+      params: {'p_user_id': userId, 'p_query': query},
+    );
   }
 
   Future<void> clearSearchHistory(String userId) async {
-    await _client.rpc('clear_search_history', params: {
-      'p_user_id': userId,
-    });
+    await _client.rpc('clear_search_history', params: {'p_user_id': userId});
   }
 
   Future<void> deleteSearchHistoryQuery(String userId, String query) async {
-    await _client.from('search_history').delete().eq('user_id', userId).eq('query', query);
+    await _client
+        .from('search_history')
+        .delete()
+        .eq('user_id', userId)
+        .eq('query', query);
   }
 
-  Future<List<Map<String, dynamic>>> getSearchSuggestions(String query, {int limit = 8}) async {
-    final response = await _client.rpc('search_suggestions', params: {
-      'p_query': query,
-      'p_limit': limit,
-    });
-    return (response as List).map((json) => Map<String, dynamic>.from(json)).toList();
+  Future<List<Map<String, dynamic>>> getSearchSuggestions(
+    String query, {
+    int limit = 8,
+  }) async {
+    final response = await _client.rpc(
+      'search_suggestions',
+      params: {'p_query': query, 'p_limit': limit},
+    );
+    return (response as List)
+        .map((json) => Map<String, dynamic>.from(json))
+        .toList();
   }
 
-  Future<List<String>> getTrendingSearches({String window = 'weekly', int limit = 10}) async {
-    final response = await _client.rpc('get_trending_searches', params: {
-      'p_window': window,
-      'p_limit': limit,
-    });
+  Future<List<String>> getTrendingSearches({
+    String window = 'weekly',
+    int limit = 10,
+  }) async {
+    final response = await _client.rpc(
+      'get_trending_searches',
+      params: {'p_window': window, 'p_limit': limit},
+    );
     return (response as List).map((json) => json['query'] as String).toList();
   }
 
@@ -253,27 +336,35 @@ class SupabaseDataSource {
     Map<String, dynamic>? filtersApplied,
   }) async {
     try {
-      await _client.rpc('log_search_event', params: {
-        'p_user_id': userId,
-        'p_query': query,
-        'p_results_count': resultsCount,
-        'p_had_results': hadResults,
-        'p_search_duration_ms': searchDurationMs,
-        'p_clicked_recipe_id': clickedRecipeId,
-        'p_sort_by': sortBy,
-        'p_filters_applied': filtersApplied,
-      });
+      await _client.rpc(
+        'log_search_event',
+        params: {
+          'p_user_id': userId,
+          'p_query': query,
+          'p_results_count': resultsCount,
+          'p_had_results': hadResults,
+          'p_search_duration_ms': searchDurationMs,
+          'p_clicked_recipe_id': clickedRecipeId,
+          'p_sort_by': sortBy,
+          'p_filters_applied': filtersApplied,
+        },
+      );
     } catch (_) {}
   }
 
   // ── Preferences ──────────────────────────────────────────────────────
   Future<Map<String, dynamic>> getUserPreferences(String userId) async {
-    final response = await _client.from('user_preferences').select().eq('user_id', userId).maybeSingle();
-    return response ?? {
-      'push_notifications': true,
-      'email_newsletters': false,
-      'active_theme': 'system'
-    };
+    final response = await _client
+        .from('user_preferences')
+        .select()
+        .eq('user_id', userId)
+        .maybeSingle();
+    return response ??
+        {
+          'push_notifications': true,
+          'email_newsletters': false,
+          'active_theme': 'system',
+        };
   }
 
   Future<void> updateUserPreferences(

@@ -39,7 +39,12 @@ class RecipeModel extends Equatable {
       cookTime: (json['cook_time'] ?? json['total_time'] ?? '') as String,
       calories: json['calories'] as String,
       servings: json['servings'] as String,
-      imageUrl: (json['image_url'] ?? json['primary_image_url'] ?? '') as String,
+      imageUrl: (json['image_url'] ??
+              json['primary_image_url'] ??
+              json['thumbnail_image_url'] ??
+              json['thumbnail_url'] ??
+              json['image'] ??
+              '') as String,
       difficulty: json['difficulty'] as String,
       isFeatured: json['is_featured'] as bool? ?? false,
       isTrending: json['is_trending'] as bool? ?? false,
@@ -65,17 +70,17 @@ class RecipeModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        title,
-        description,
-        rating,
-        reviews,
-        cookTime,
-        calories,
-        servings,
-        imageUrl,
-        difficulty,
-        isFeatured,
-        isTrending,
-      ];
+    id,
+    title,
+    description,
+    rating,
+    reviews,
+    cookTime,
+    calories,
+    servings,
+    imageUrl,
+    difficulty,
+    isFeatured,
+    isTrending,
+  ];
 }

@@ -41,11 +41,17 @@ class RecipeRepository {
     );
   }
 
-  Future<List<Map<String, dynamic>>> getSearchSuggestions(String query, {int limit = 8}) async {
+  Future<List<Map<String, dynamic>>> getSearchSuggestions(
+    String query, {
+    int limit = 8,
+  }) async {
     return await _dataSource.getSearchSuggestions(query, limit: limit);
   }
 
-  Future<List<String>> getTrendingSearches({String window = 'weekly', int limit = 10}) async {
+  Future<List<String>> getTrendingSearches({
+    String window = 'weekly',
+    int limit = 10,
+  }) async {
     return await _dataSource.getTrendingSearches(window: window, limit: limit);
   }
 
@@ -76,6 +82,7 @@ class RecipeRepository {
   }
 
   Future<List<RecipeModel>> getTrendingRecipes() async {
+    print('hello == i am at line 79 of receipe repos');
     return await _dataSource.getTrendingRecipes();
   }
 
