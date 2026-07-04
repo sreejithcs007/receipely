@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../../../router/routes.dart';
 import '../../../../shared/core/constants/asset_constants.dart';
 import '../../../../shared/widgets/avatar/profile_avatar.dart';
@@ -100,12 +101,10 @@ class _HomeScreenState extends State<HomeScreen> {
       child: BlocBuilder<HomeBloc, HomeState>(
         builder: (context, state) {
           if (state is HomeLoading) {
-            return const Scaffold(
-              backgroundColor: Color(0xFFFAF7F2),
-              body: Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFFF47B20),
-                ),
+            return Scaffold(
+              backgroundColor: const Color(0xFFFAF7F2),
+              body: SafeArea(
+                child: _buildHomeShimmer(context),
               ),
             );
           }
@@ -118,11 +117,25 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xFFFDECEB),
+                        ),
+                        child: const Icon(
+                          Icons.error_outline_rounded,
+                          color: Color(0xFFEA4335),
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
                       Text(
-                        'Failed to load home data',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                        'Failed to load recipes',
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
                           color: const Color(0xFF1F1E1C),
                         ),
                       ),
@@ -131,23 +144,31 @@ class _HomeScreenState extends State<HomeScreen> {
                         state.message,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
-                          fontSize: 13,
+                          fontSize: 13.5,
                           color: const Color(0xFF8C8A87),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 28),
                       ElevatedButton(
                         onPressed: () {
-                          // Trigger reload using the builder context
+                          context.read<HomeBloc>().add(LoadHomeData());
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFF47B20),
                           foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text('Retry'),
+                        child: Text(
+                          'Retry',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -840,6 +861,93 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildHomeShimmer(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: const Color(0xFFEFEBE4),
+      highlightColor: const Color(0xFFF5F3EE),
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Row Shimmer
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(width: 140, height: 28, color: Colors.white),
+                      const SizedBox(height: 8),
+                      Container(width: 200, height: 16, color: Colors.white),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Container(width: 48, height: 48, decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white)),
+              ],
+            ),
+            const SizedBox(height: 28),
+
+            // Search Bar Shimmer
+            Container(
+              height: 52,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            const SizedBox(height: 28),
+
+            // Categories Shimmer
+            Row(
+              children: List.generate(4, (index) => Expanded(
+                child: Container(
+                  margin: EdgeInsets.only(right: index == 3 ? 0 : 8),
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              )),
+            ),
+            const SizedBox(height: 28),
+
+            // Featured Hero Card Shimmer
+            Container(
+              height: 280,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // Trending Section Header Shimmer
+            Container(width: 180, height: 24, color: Colors.white),
+            const SizedBox(height: 16),
+
+            // Trending Recipes list Shimmer
+            Row(
+              children: List.generate(2, (index) => Expanded(
+                child: Container(
+                  margin: EdgeInsets.only(right: index == 1 ? 0 : 16),
+                  height: 250,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+              )),
+            ),
+          ],
+        ),
       ),
     );
   }

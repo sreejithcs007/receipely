@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../router/routes.dart';
 import '../../../../shared/core/constants/asset_constants.dart';
+import '../../../../shared/widgets/loader/shimmer_card.dart';
 import '../../../../shared/di/service_locator.dart';
 import '../../../../shared/data/repositories/user_repository.dart';
 import '../../bloc/favorites_bloc.dart';
@@ -41,7 +42,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     // ── Scrollable Content Area ─────────────────────────────
                     Expanded(
                       child: state.isLoading
-                          ? const Center(child: CircularProgressIndicator(color: Color(0xFFF47B20)))
+                          ? _buildShimmerGrid()
                           : SingleChildScrollView(
                               physics: const BouncingScrollPhysics(),
                               child: Column(
@@ -202,8 +203,20 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         padding: const EdgeInsets.only(top: 80.0),
         child: Column(
           children: [
-            const Icon(Icons.bookmark_outline_rounded, size: 64, color: Color(0xFFB5B3B0)),
-            const SizedBox(height: 16),
+            Container(
+              width: 72,
+              height: 72,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFFFFF2D9),
+              ),
+              child: const Icon(
+                Icons.bookmark_outline_rounded,
+                color: Color(0xFFF47B20),
+                size: 32,
+              ),
+            ),
+            const SizedBox(height: 20),
             Text(
               title,
               style: GoogleFonts.playfairDisplay(
@@ -224,6 +237,23 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildShimmerGrid() {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        mainAxisExtent: 220,
+      ),
+      itemCount: 4,
+      itemBuilder: (context, index) {
+        return const ShimmerCard(height: 220, width: double.infinity);
+      },
     );
   }
 

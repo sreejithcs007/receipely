@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../router/routes.dart';
 import '../../../../shared/core/constants/asset_constants.dart';
+import '../../../../shared/widgets/loader/shimmer_card.dart';
 import '../../../../shared/di/service_locator.dart';
 import '../../../../shared/data/repositories/recipe_repository.dart';
 import '../../../../shared/data/repositories/user_repository.dart';
@@ -106,7 +107,9 @@ class _SearchScreenState extends State<SearchScreen> {
                                 const SizedBox(height: 16),
 
                                 // Grid Items
-                                if (state.results.isEmpty)
+                                if (state.isLoading)
+                                  _buildShimmerGrid()
+                                else if (state.results.isEmpty)
                                   _buildEmptyState()
                                 else
                                   _buildRecipesGrid(context, state),
@@ -491,8 +494,20 @@ class _SearchScreenState extends State<SearchScreen> {
         padding: const EdgeInsets.only(top: 40.0),
         child: Column(
           children: [
-            const Icon(Icons.search_off_rounded, size: 64, color: Color(0xFFB5B3B0)),
-            const SizedBox(height: 16),
+            Container(
+              width: 72,
+              height: 72,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFFFFF2D9),
+              ),
+              child: const Icon(
+                Icons.search_off_rounded,
+                color: Color(0xFFF47B20),
+                size: 32,
+              ),
+            ),
+            const SizedBox(height: 20),
             Text(
               'No recipes found',
               style: GoogleFonts.playfairDisplay(
@@ -512,6 +527,23 @@ class _SearchScreenState extends State<SearchScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildShimmerGrid() {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        mainAxisExtent: 220,
+      ),
+      itemCount: 4,
+      itemBuilder: (context, index) {
+        return const ShimmerCard(height: 220, width: double.infinity);
+      },
     );
   }
 
