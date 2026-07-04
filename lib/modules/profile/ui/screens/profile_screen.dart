@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../router/routes.dart';
 import '../../../../shared/core/constants/asset_constants.dart';
@@ -40,27 +41,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-                  child: Column(
-                    children: [
-                      // ── Avatar & Name & Chef Badge ─────────────────────────
-                      _buildHeaderAvatar(state),
+                  child: state.isLoading
+                      ? _buildProfileShimmer(context)
+                      : Column(
+                          children: [
+                            // ── Avatar & Name & Chef Badge ─────────────────────────
+                            _buildHeaderAvatar(state),
 
-                      const SizedBox(height: 24),
+                            const SizedBox(height: 24),
 
-                      // ── Stats Card (Excluding Followers) ───────────────────
-                      _buildStatsCard(state),
+                            // ── Stats Card (Excluding Followers) ───────────────────
+                            _buildStatsCard(state),
 
-                      const SizedBox(height: 32),
+                            const SizedBox(height: 32),
 
-                      // ── Achievements Row ───────────────────────────────────
-                      _buildAchievementsSection(),
+                            // ── Achievements Row ───────────────────────────────────
+                            _buildAchievementsSection(),
 
-                      const SizedBox(height: 32),
+                            const SizedBox(height: 32),
 
-                      // ── Actions Card ──────────────────────────────────────
-                      _buildActionsCard(context),
-                    ],
-                  ),
+                            // ── Actions Card ──────────────────────────────────────
+                            _buildActionsCard(context),
+                          ],
+                        ),
                 ),
               ),
             );
@@ -600,6 +603,76 @@ class _ProfileScreenState extends State<ProfileScreen> {
           fontWeight: FontWeight.w700,
           color: const Color(0xFFF47B20),
         ),
+      ),
+    );
+  }
+
+  Widget _buildProfileShimmer(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: const Color(0xFFEFEBE4),
+      highlightColor: const Color(0xFFF5F3EE),
+      child: Column(
+        children: [
+          // Avatar circle
+          Center(
+            child: Container(
+              width: 110,
+              height: 110,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Name placeholder
+          Container(width: 180, height: 22, color: Colors.white),
+          const SizedBox(height: 6),
+          // Level placeholder
+          Container(width: 100, height: 14, color: Colors.white),
+          const SizedBox(height: 24),
+          
+          // Stats Card
+          Container(
+            height: 80,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+          const SizedBox(height: 32),
+          
+          // Achievements Title
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Container(width: 140, height: 20, color: Colors.white),
+          ),
+          const SizedBox(height: 16),
+          // Achievements Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(3, (index) => Container(
+              width: 80,
+              height: 100,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+            )),
+          ),
+          const SizedBox(height: 32),
+          
+          // Actions Card
+          Container(
+            height: 180,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
+          ),
+        ],
       ),
     );
   }

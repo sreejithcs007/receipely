@@ -17,6 +17,8 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper>
   late StreamSubscription<bool> _sub;
   bool _isConnected = true;
   bool _showBanner = false;
+  bool _hasHadOfflineError = false;
+  bool _isInitialCheck = true;
   late AnimationController _animCtrl;
 
   @override
@@ -28,35 +30,60 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper>
       duration: const Duration(milliseconds: 320),
     );
 
-    // Check initial state
-    ConnectivityService.instance.isConnected().then((connected) {
-      if (mounted) _updateStatus(connected);
-    });
-
     // Listen to changes
     _sub = ConnectivityService.instance.onConnectivityChanged.listen((connected) {
       if (mounted) _updateStatus(connected);
     });
+
+    // Check initial state
+    ConnectivityService.instance.isConnected().then((connected) {
+      if (mounted) {
+        if (!connected) {
+          // If initially offline, show the banner
+          _hasHadOfflineError = true;
+          setState(() {
+            _isConnected = false;
+            _showBanner = true;
+          });
+          _animCtrl.forward();
+        }
+        _isInitialCheck = false;
+      }
+    });
   }
 
   void _updateStatus(bool connected) {
-    setState(() {
-      _isConnected = connected;
-      _showBanner = true;
-    });
+    if (_isInitialCheck) {
+      return;
+    }
 
     if (!connected) {
+      setState(() {
+        _isConnected = false;
+        _showBanner = true;
+        _hasHadOfflineError = true;
+      });
       _animCtrl.forward();
     } else {
-      // Show "back online" briefly then hide
-      _animCtrl.forward();
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          _animCtrl.reverse().then((_) {
-            if (mounted) setState(() => _showBanner = false);
-          });
-        }
-      });
+      if (_hasHadOfflineError) {
+        setState(() {
+          _isConnected = true;
+          _showBanner = true;
+        });
+        _animCtrl.forward();
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            _animCtrl.reverse().then((_) {
+              if (mounted) {
+                setState(() {
+                  _showBanner = false;
+                  _hasHadOfflineError = false;
+                });
+              }
+            });
+          }
+        });
+      }
     }
   }
 
@@ -109,7 +136,7 @@ class _Banner extends StatelessWidget {
         decoration: BoxDecoration(
           color: isConnected
               ? const Color(0xFF2E7D32)   // dark green — back online
-              : const Color(0xFF1A1A1A),  // near-black — offline
+              : const Color(0xFFD97706),  // amber warning — offline
           borderRadius: BorderRadius.circular(50),
         ),
         child: Row(
