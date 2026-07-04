@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../../../shared/core/constants/asset_constants.dart';
 import '../../../../shared/di/service_locator.dart';
 import '../../../../shared/data/repositories/recipe_repository.dart';
@@ -27,6 +28,40 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       )..add(LoadRecipeDetail(widget.recipeId)),
       child: BlocBuilder<RecipeDetailBloc, RecipeDetailState>(
         builder: (context, state) {
+          if (state.title == 'Loading...') {
+            return Scaffold(
+              backgroundColor: const Color(0xFFFAF7F2),
+              body: Stack(
+                children: [
+                  SafeArea(
+                    top: false,
+                    child: _buildDetailShimmer(context),
+                  ),
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 12,
+                    left: 20,
+                    child: GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                        ),
+                        child: const Icon(
+                          Icons.chevron_left_rounded,
+                          color: Color(0xFF1F1E1C),
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
           return Scaffold(
             backgroundColor: const Color(0xFFFAF7F2), // Canvas
             body: Stack(
@@ -852,6 +887,85 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildDetailShimmer(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: const Color(0xFFEFEBE4),
+      highlightColor: const Color(0xFFF5F3EE),
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Image Placeholder
+            Container(
+              height: 340,
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
+              ),
+            ),
+            
+            // Recipe Info Padding
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title Placeholder
+                  Container(width: 250, height: 28, color: Colors.white),
+                  const SizedBox(height: 12),
+                  
+                  // Description Placeholders
+                  Container(width: double.infinity, height: 16, color: Colors.white),
+                  const SizedBox(height: 8),
+                  Container(width: double.infinity, height: 16, color: Colors.white),
+                  const SizedBox(height: 8),
+                  Container(width: 180, height: 16, color: Colors.white),
+                  const SizedBox(height: 24),
+                  
+                  // Stats Row Placeholder
+                  Container(
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  
+                  // Tab Bar Placeholder
+                  Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Ingredients/Steps items placeholders
+                  Column(
+                    children: List.generate(4, (index) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
+                      child: Row(
+                        children: [
+                          Container(width: 24, height: 24, decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white)),
+                          const SizedBox(width: 16),
+                          Container(width: 160, height: 16, color: Colors.white),
+                        ],
+                      ),
+                    )),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
