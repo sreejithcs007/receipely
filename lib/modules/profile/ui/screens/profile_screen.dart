@@ -257,92 +257,314 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildAchievementsSection() {
-    final achievements = [
-      _AchievementItem('Home Cook', Icons.soup_kitchen_rounded, 0xFFFDECEB, 0xFFE91E63),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildBadge(_AchievementItem ach, {double size = 54.0}) {
+    return Stack(
+      clipBehavior: Clip.none,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Achievements',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF1F1E1C),
+        Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Color(ach.bgHexColor),
+            border: Border.all(
+              color: ach.isLocked ? const Color(0xFFE5E2DC) : const Color(0xFFFFF2D9),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF3A2818).withValues(alpha: ach.isLocked ? 0.02 : 0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Icon(
+            ach.icon,
+            color: Color(ach.iconHexColor),
+            size: size * 0.45,
+          ),
+        ),
+        if (ach.isLocked)
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFF8C8A87),
+              ),
+              child: const Icon(
+                Icons.lock_rounded,
+                color: Colors.white,
+                size: 10,
               ),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'View all',
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFFF47B20),
-                  ),
-                ),
-                const SizedBox(width: 2),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: Color(0xFFF47B20),
-                  size: 16,
-                ),
-              ],
+          )
+        else
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFF4CAF50),
+              ),
+              child: const Icon(
+                Icons.check_rounded,
+                color: Colors.white,
+                size: 10,
+              ),
             ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 94,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: achievements.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 14),
-            itemBuilder: (context, index) {
-              final ach = achievements[index];
-              return Column(
-                children: [
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      // Badge Circle
-                      Container(
-                        width: 54,
-                        height: 54,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(ach.bgHexColor),
-                        ),
-                        child: Icon(
-                          ach.icon,
-                          color: Color(ach.iconHexColor),
-                          size: 24,
-                        ),
-                      ),
-                    ],
+          ),
+      ],
+    );
+  }
+
+  void _showAllAchievementsBottomSheet(BuildContext context, List<_AchievementItem> achievements) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (dialogContext) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFFFAF7F2),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(28),
+              topRight: Radius.circular(28),
+            ),
+          ),
+          padding: const EdgeInsets.only(left: 24, right: 24, top: 20, bottom: 30),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFEBE4),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  const SizedBox(height: 8),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
                   Text(
-                    ach.name,
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF8C8A87),
+                    'All Achievements',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1F1E1C),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF2D9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '1 Unlocked',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFFF47B20),
+                      ),
                     ),
                   ),
                 ],
-              );
-            },
+              ),
+              const SizedBox(height: 20),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: achievements.length,
+                  separatorBuilder: (_, __) => const Divider(color: Color(0xFFEFEBE4), height: 24),
+                  itemBuilder: (ctx, idx) {
+                    final ach = achievements[idx];
+                    return Row(
+                      children: [
+                        _buildBadge(ach, size: 48),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                ach.name,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: ach.isLocked ? const Color(0xFF8C8A87) : const Color(0xFF1F1E1C),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                ach.description,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                  color: const Color(0xFFB5B3B0),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (ach.isLocked)
+                          Text(
+                            'Locked',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFFB5B3B0),
+                            ),
+                          )
+                        else
+                          Text(
+                            'Unlocked',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF4CAF50),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+        );
+      },
+    );
+  }
+
+  Widget _buildAchievementsSection() {
+    final achievements = [
+      _AchievementItem(
+        'Home Cook',
+        Icons.soup_kitchen_rounded,
+        0xFFFFF2D9,
+        0xFFF47B20,
+        isLocked: false,
+        description: 'Cooked your first recipe successfully!',
+      ),
+      _AchievementItem(
+        'Master Chef',
+        Icons.restaurant_menu_rounded,
+        0xFFF2F0EC,
+        0xFF8C8A87,
+        isLocked: true,
+        description: 'Cook 10 featured recipes to unlock.',
+      ),
+      _AchievementItem(
+        'Flavor Finder',
+        Icons.explore_outlined,
+        0xFFF2F0EC,
+        0xFF8C8A87,
+        isLocked: true,
+        description: 'Save recipes from 5 different categories.',
+      ),
+      _AchievementItem(
+        'Spice Master',
+        Icons.local_fire_department_outlined,
+        0xFFF2F0EC,
+        0xFF8C8A87,
+        isLocked: true,
+        description: 'Generate 5 custom AI recipes.',
+      ),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFEFEBE4), width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF3A2818).withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Achievements',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1F1E1C),
+                ),
+              ),
+              GestureDetector(
+                onTap: () => _showAllAchievementsBottomSheet(context, achievements),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'View all',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFFF47B20),
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: Color(0xFFF47B20),
+                      size: 16,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 94,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: achievements.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 14),
+              itemBuilder: (context, index) {
+                final ach = achievements[index];
+                return Column(
+                  children: [
+                    _buildBadge(ach),
+                    const SizedBox(height: 8),
+                    Text(
+                      ach.name,
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: ach.isLocked ? const Color(0xFFB5B3B0) : const Color(0xFF1F1E1C),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -658,6 +880,15 @@ class _AchievementItem {
   final IconData icon;
   final int bgHexColor;
   final int iconHexColor;
+  final bool isLocked;
+  final String description;
 
-  _AchievementItem(this.name, this.icon, this.bgHexColor, this.iconHexColor);
+  _AchievementItem(
+    this.name,
+    this.icon,
+    this.bgHexColor,
+    this.iconHexColor, {
+    this.isLocked = false,
+    this.description = '',
+  });
 }

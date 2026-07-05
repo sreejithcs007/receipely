@@ -113,7 +113,7 @@ class ProfileAvatar extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: context.primary.c50,
-          border: Border.all(color: context.primary.c100, width: 1.5),
+          border: Border.all(color: context.primary.c500, width: 1.5),
         ),
         child: ClipOval(child: avatarChild),
       ),
