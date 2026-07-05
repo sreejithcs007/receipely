@@ -19,6 +19,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  bool _isSavingProfile = false;
+  bool _isUpdatingEmail = false;
+  bool _isLoggingOut = false;
 
   @override
   void dispose() {
@@ -79,7 +82,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               body: SafeArea(
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
-                  child: _buildBody(context, state),
+                  child: _buildBody(state),
                 ),
               ),
             );
@@ -106,7 +109,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Widget _buildBody(BuildContext context, SettingsState state) {
+  Widget _buildBody(SettingsState state) {
     switch (state.activeSubSection) {
       case 'terms':
         return _buildTermsView();
@@ -115,15 +118,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       case 'about':
         return _buildAboutView();
       case 'profile_details':
-        return _buildProfileDetailsView(context, state);
+        return _buildProfileDetailsView(state);
       case 'email_address':
-        return _buildEmailAddressView(context, state);
+        return _buildEmailAddressView(state);
       default:
-        return _buildMainSettings(context, state);
+        return _buildMainSettings(state);
     }
   }
 
-  Widget _buildMainSettings(BuildContext context, SettingsState state) {
+  Widget _buildMainSettings(SettingsState state) {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -250,18 +253,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   borderRadius: BorderRadius.circular(16),
                   side: const BorderSide(color: Color(0xFFF8B2B2), width: 1.0),
                 ),
+                disabledBackgroundColor: const Color(0xFFFDECEB),
               ),
-              onPressed: () {
-                const LoginRoute().go(context);
-              },
-              child: Text(
-                'Log Out',
-                style: GoogleFonts.poppins(
-                  color: const Color(0xFFD32F2F),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              onPressed: _isLoggingOut
+                  ? null
+                  : () async {
+                      setState(() => _isLoggingOut = true);
+                      try {
+                        await getIt<UserRepository>().signOut();
+                      } catch (_) {}
+                      await Future.delayed(const Duration(milliseconds: 500));
+                      if (!mounted) return;
+                      const LoginRoute().go(context);
+                    },
+              child: _isLoggingOut
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.0,
+                        color: Color(0xFFD32F2F),
+                      ),
+                    )
+                  : Text(
+                      'Log Out',
+                      style: GoogleFonts.poppins(
+                        color: const Color(0xFFD32F2F),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
             ),
           ),
           const SizedBox(height: 20),
@@ -353,7 +374,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // ── Profile Details edit sub-view ─────────────────────────────────────────
-  Widget _buildProfileDetailsView(BuildContext context, SettingsState state) {
+  Widget _buildProfileDetailsView(SettingsState state) {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(24),
@@ -437,27 +458,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 elevation: 0,
+                disabledBackgroundColor: const Color(0xFFF47B20).withValues(alpha: 0.6),
               ),
-              onPressed: () {
-                context.read<SettingsBloc>().add(UpdateProfile(
-                      name: _nameController.text.trim(),
-                      title: _titleController.text.trim(),
-                    ));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Profile details updated successfully!'),
-                    backgroundColor: Color(0xFFF47B20),
-                  ),
-                );
-              },
-              child: Text(
-                'Save Changes',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              onPressed: _isSavingProfile
+                  ? null
+                  : () async {
+                      setState(() => _isSavingProfile = true);
+                      context.read<SettingsBloc>().add(UpdateProfile(
+                            name: _nameController.text.trim(),
+                            title: _titleController.text.trim(),
+                          ));
+                      await Future.delayed(const Duration(milliseconds: 600));
+                      if (!mounted) return;
+                      setState(() => _isSavingProfile = false);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Profile details updated successfully!'),
+                          backgroundColor: Color(0xFFF47B20),
+                        ),
+                      );
+                    },
+              child: _isSavingProfile
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.0,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      'Save Changes',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
             ),
           ),
         ],
@@ -466,7 +503,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // ── Email Address edit sub-view ───────────────────────────────────────────
-  Widget _buildEmailAddressView(BuildContext context, SettingsState state) {
+  Widget _buildEmailAddressView(SettingsState state) {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(24),
@@ -545,34 +582,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 elevation: 0,
+                disabledBackgroundColor: const Color(0xFFF47B20).withValues(alpha: 0.6),
               ),
-              onPressed: () {
-                final email = _emailController.text.trim();
-                if (email.isNotEmpty && email.contains('@')) {
-                  context.read<SettingsBloc>().add(UpdateEmail(email));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Email address updated successfully!'),
-                      backgroundColor: Color(0xFFF47B20),
+              onPressed: _isUpdatingEmail
+                  ? null
+                  : () async {
+                      final email = _emailController.text.trim();
+                      if (email.isNotEmpty && email.contains('@')) {
+                        setState(() => _isUpdatingEmail = true);
+                        context.read<SettingsBloc>().add(UpdateEmail(email));
+                        await Future.delayed(const Duration(milliseconds: 600));
+                        if (!mounted) return;
+                        setState(() => _isUpdatingEmail = false);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Email address updated successfully!'),
+                            backgroundColor: Color(0xFFF47B20),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please enter a valid email address.'),
+                            backgroundColor: Color(0xFFD32F2F),
+                          ),
+                        );
+                      }
+                    },
+              child: _isUpdatingEmail
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.0,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      'Update Email',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please enter a valid email address.'),
-                      backgroundColor: Color(0xFFD32F2F),
-                    ),
-                  );
-                }
-              },
-              child: Text(
-                'Update Email',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
             ),
           ),
         ],
