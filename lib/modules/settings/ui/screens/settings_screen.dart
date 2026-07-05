@@ -82,7 +82,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               body: SafeArea(
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
-                  child: _buildBody(state),
+                  child: _buildBody(context, state),
                 ),
               ),
             );
@@ -109,7 +109,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Widget _buildBody(SettingsState state) {
+  Widget _buildBody(BuildContext context, SettingsState state) {
     switch (state.activeSubSection) {
       case 'terms':
         return _buildTermsView();
@@ -118,15 +118,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       case 'about':
         return _buildAboutView();
       case 'profile_details':
-        return _buildProfileDetailsView(state);
+        return _buildProfileDetailsView(context, state);
       case 'email_address':
-        return _buildEmailAddressView(state);
+        return _buildEmailAddressView(context, state);
       default:
-        return _buildMainSettings(state);
+        return _buildMainSettings(context, state);
     }
   }
 
-  Widget _buildMainSettings(SettingsState state) {
+  Widget _buildMainSettings(BuildContext context, SettingsState state) {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -263,7 +263,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         await getIt<UserRepository>().signOut();
                       } catch (_) {}
                       await Future.delayed(const Duration(milliseconds: 500));
-                      if (!mounted) return;
+                      if (!context.mounted) return;
                       const LoginRoute().go(context);
                     },
               child: _isLoggingOut
@@ -374,7 +374,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // ── Profile Details edit sub-view ─────────────────────────────────────────
-  Widget _buildProfileDetailsView(SettingsState state) {
+  Widget _buildProfileDetailsView(BuildContext context, SettingsState state) {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(24),
@@ -469,7 +469,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             title: _titleController.text.trim(),
                           ));
                       await Future.delayed(const Duration(milliseconds: 600));
-                      if (!mounted) return;
+                      if (!context.mounted) return;
                       setState(() => _isSavingProfile = false);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -503,7 +503,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // ── Email Address edit sub-view ───────────────────────────────────────────
-  Widget _buildEmailAddressView(SettingsState state) {
+  Widget _buildEmailAddressView(BuildContext context, SettingsState state) {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(24),
@@ -592,7 +592,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         setState(() => _isUpdatingEmail = true);
                         context.read<SettingsBloc>().add(UpdateEmail(email));
                         await Future.delayed(const Duration(milliseconds: 600));
-                        if (!mounted) return;
+                        if (!context.mounted) return;
                         setState(() => _isUpdatingEmail = false);
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
