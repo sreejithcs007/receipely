@@ -130,31 +130,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   }(),
                 ),
               ),
-              // Floating Edit Pencil button
-              Positioned(
-                bottom: 2,
-                right: 2,
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
-                    border: Border.all(color: const Color(0xFFEFEBE4), width: 1.0),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.edit_outlined,
-                    color: Color(0xFF8C8A87),
-                    size: 16,
-                  ),
-                ),
-              ),
             ],
           ),
         ),

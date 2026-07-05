@@ -156,54 +156,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ]),
 
-          const SizedBox(height: 28),
-
-          // ── Preferences Category ────────────────────────────────────────────
-          _buildCategoryHeader('App Preferences'),
-          const SizedBox(height: 12),
-          _buildGroupContainer([
-            // Push Notifications Switch
-            ListTile(
-              leading: const Icon(Icons.notifications_none_rounded, color: Color(0xFF8C8A87)),
-              title: Text(
-                'Push Notifications',
-                style: GoogleFonts.poppins(fontSize: 14.5, fontWeight: FontWeight.w500, color: const Color(0xFF1F1E1C)),
-              ),
-              trailing: Switch(
-                value: state.pushNotifications,
-                activeTrackColor: const Color(0xFFFFE0A3),
-                activeThumbColor: const Color(0xFFF47B20),
-                onChanged: (value) {
-                  context.read<SettingsBloc>().add(TogglePushNotifications());
-                },
-              ),
-            ),
-            const Divider(color: Color(0xFFEFEBE4), height: 1),
-            // Newsletter Switch
-            ListTile(
-              leading: const Icon(Icons.mail_outline_rounded, color: Color(0xFF8C8A87)),
-              title: Text(
-                'Email Newsletters',
-                style: GoogleFonts.poppins(fontSize: 14.5, fontWeight: FontWeight.w500, color: const Color(0xFF1F1E1C)),
-              ),
-              trailing: Switch(
-                value: state.emailNewsletters,
-                activeTrackColor: const Color(0xFFFFE0A3),
-                activeThumbColor: const Color(0xFFF47B20),
-                onChanged: (value) {
-                  context.read<SettingsBloc>().add(ToggleEmailNewsletters());
-                },
-              ),
-            ),
-            const Divider(color: Color(0xFFEFEBE4), height: 1),
-            // Theme Mode
-            _buildSettingTile(
-              icon: Icons.dark_mode_outlined,
-              title: 'Theme Mode',
-              subtitle: state.activeTheme.toUpperCase(),
-              onTap: () => _showThemeSelector(context),
-            ),
-          ]),
 
           const SizedBox(height: 28),
 
@@ -360,19 +312,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showThemeSelector(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return AppThemeDialog(
-          onSelect: (theme) {
-            context.read<SettingsBloc>().add(UpdateThemeMode(theme));
-          },
-        );
-      },
-    );
-  }
-
   // ── Profile Details edit sub-view ─────────────────────────────────────────
   Widget _buildProfileDetailsView(BuildContext context, SettingsState state) {
     return SingleChildScrollView(
@@ -382,47 +321,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
-            child: Stack(
-              children: [
-                Container(
-                  width: 90,
-                  height: 90,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 3.0),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 12,
-                      ),
-                    ],
+            child: Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 3.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 12,
                   ),
-                  child: const ClipOval(
-                    child: Icon(
-                      Icons.person_rounded,
-                      color: Color(0xFF8C8A87),
-                      size: 48,
+                ],
+              ),
+              child: ClipOval(
+                child: Container(
+                  color: const Color(0xFFFFF2D9),
+                  alignment: Alignment.center,
+                  child: Text(
+                    state.name.trim().isNotEmpty ? state.name.trim()[0].toUpperCase() : 'S',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 38,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFFF47B20),
                     ),
                   ),
                 ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: 28,
-                    height: 28,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFFF47B20),
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt_outlined,
-                      color: Colors.white,
-                      size: 14,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
           const SizedBox(height: 32),
