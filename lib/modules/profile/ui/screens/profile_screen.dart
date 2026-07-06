@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../router/routes.dart';
@@ -118,10 +119,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     }
 
                     return !isAsset && resolvedUrl.isNotEmpty
-                        ? Image.network(
-                            resolvedUrl,
+                        ? CachedNetworkImage(
+                            imageUrl: resolvedUrl,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _buildInitialsPlaceholder(state.name),
+                            placeholder: (context, url) => Container(
+                              color: const Color(0xFFEFEBE4),
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Color(0xFFF47B20),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => _buildInitialsPlaceholder(state.name),
                           )
                         : Image.asset(
                             resolvedUrl.isNotEmpty ? resolvedUrl : AppImages.chefAvatar,

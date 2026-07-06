@@ -102,9 +102,23 @@ class SupabaseDataSource {
         },
       );
 
-      return (response as List)
+      var list = (response as List)
           .map((json) => RecipeModel.fromJson(json))
           .toList();
+
+      if (list.isEmpty && query != null && query.trim().isNotEmpty) {
+        final fallbackResponse = await _client
+            .from('recipes')
+            .select()
+            .ilike('title', '%${query.trim()}%')
+            .isFilter('deleted_at', null)
+            .limit(limit);
+        list = (fallbackResponse as List)
+            .map((json) => RecipeModel.fromJson(json))
+            .toList();
+      }
+
+      return list;
     }
 
     var request = _client.from('recipes').select().isFilter('deleted_at', null);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../../shared/core/constants/asset_constants.dart';
 import '../../../../shared/di/service_locator.dart';
@@ -154,10 +155,18 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             child: ClipRRect(
               borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
               child: state.imageUrl.startsWith('http')
-                  ? Image.network(
-                      state.imageUrl,
+                  ? CachedNetworkImage(
+                      imageUrl: state.imageUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Image.asset(
+                      placeholder: (context, url) => Container(
+                        color: const Color(0xFFEFEBE4),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFFF47B20),
+                          ),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Image.asset(
                         AppImages.recipeRamen,
                         fit: BoxFit.cover,
                       ),

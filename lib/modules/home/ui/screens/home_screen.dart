@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../router/routes.dart';
@@ -454,10 +455,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(20),
                 child: isAsset
                     ? Image.asset(resolvedUrl, fit: BoxFit.cover)
-                    : Image.network(
-                        resolvedUrl,
+                    : CachedNetworkImage(
+                        imageUrl: resolvedUrl,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
+                        placeholder: (context, url) => Container(
+                          color: const Color(0xFFEFEBE4),
+                          child: const Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFFF47B20),
+                              ),
+                            ),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
                           color: const Color(0xFFFFF2D9),
                           child: const Icon(Icons.restaurant_rounded, color: Color(0xFFF47B20)),
                         ),
@@ -609,10 +623,18 @@ class _HomeScreenState extends State<HomeScreen> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(24),
               child: imageUrl.startsWith('http')
-                  ? Image.network(
-                      imageUrl,
+                  ? CachedNetworkImage(
+                      imageUrl: imageUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Image.asset(
+                      placeholder: (context, url) => Container(
+                        color: const Color(0xFFEFEBE4),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFFF47B20),
+                          ),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Image.asset(
                         AppImages.heroBanner,
                         fit: BoxFit.cover,
                       ),
@@ -904,10 +926,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       top: Radius.circular(20),
                     ),
                     child: item.imageUrl.startsWith('http')
-                        ? Image.network(
-                            item.imageUrl,
+                        ? CachedNetworkImage(
+                            imageUrl: item.imageUrl,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Image.asset(
+                            placeholder: (context, url) => Container(
+                              color: const Color(0xFFEFEBE4),
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Color(0xFFF47B20),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Image.asset(
                               AppImages.recipeRamen,
                               fit: BoxFit.cover,
                             ),

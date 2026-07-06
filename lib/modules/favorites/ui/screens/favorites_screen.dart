@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../router/routes.dart';
 import '../../../../shared/core/constants/asset_constants.dart';
 import '../../../../shared/widgets/loader/shimmer_card.dart';
@@ -301,10 +302,23 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                             top: Radius.circular(20),
                           ),
                           child: item.imageUrl.startsWith('http')
-                              ? Image.network(
-                                  item.imageUrl,
+                              ? CachedNetworkImage(
+                                  imageUrl: item.imageUrl,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Image.asset(
+                                  placeholder: (context, url) => Container(
+                                    color: const Color(0xFFEFEBE4),
+                                    child: const Center(
+                                      child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Color(0xFFF47B20),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  errorWidget: (context, url, error) => Image.asset(
                                     AppImages.recipeRamen,
                                     fit: BoxFit.cover,
                                   ),
