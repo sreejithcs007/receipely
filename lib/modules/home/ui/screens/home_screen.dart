@@ -90,6 +90,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _activeCategoryIndex = 0;
+  int _currentFeaturedPageIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -199,8 +200,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ))
                 .toList();
 
-            final featuredRecipe = state.featuredRecipes.firstOrNull;
-
             return Scaffold(
               backgroundColor: const Color(0xFFFAF7F2), // Premium Canvas background
               body: SafeArea(
@@ -220,23 +219,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       const SizedBox(height: 28),
 
-                      // ── Categories Horizontal List ──────────────────────────────
-                      _buildCategoriesList(categories),
-
-                      const SizedBox(height: 28),
-
-                      // ── Featured Hero Card ──────────────────────────────────────
-                      _buildFeaturedCard(
+                      // ── Featured Hero Card (Carousel) ──────────────────────────
+                      _buildFeaturedCarousel(
                         context,
-                        featuredRecipe,
-                        isFavorited: featuredRecipe != null &&
-                            state.favoriteRecipeIds.contains(featuredRecipe.id),
+                        state.featuredRecipes,
+                        state.favoriteRecipeIds,
                       ),
 
                       const SizedBox(height: 32),
 
                       // ── Trending Recipes Section ────────────────────────────────
                       _buildTrendingSection(context, trendingRecipes),
+
+                      const SizedBox(height: 32),
+
+                      // ── Categories Horizontal List ──────────────────────────────
+                      _buildCategoriesList(categories),
                     ],
                   ),
                 ),
@@ -412,6 +410,63 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildFeaturedCarousel(
+    BuildContext context,
+    List<RecipeModel> featuredRecipes,
+    List<String> favoriteRecipeIds,
+  ) {
+    if (featuredRecipes.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 320,
+          child: PageView.builder(
+            itemCount: featuredRecipes.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentFeaturedPageIndex = index;
+              });
+            },
+            physics: const BouncingScrollPhysics(),
+            itemBuilder: (context, index) {
+              final recipe = featuredRecipes[index];
+              final isFavorited = favoriteRecipeIds.contains(recipe.id);
+              return _buildFeaturedCard(
+                context,
+                recipe,
+                isFavorited: isFavorited,
+              );
+            },
+          ),
+        ),
+        if (featuredRecipes.length > 1) ...[
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              featuredRecipes.length,
+              (index) => AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: _currentFeaturedPageIndex == index ? 24 : 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: _currentFeaturedPageIndex == index
+                      ? const Color(0xFFF47B20)
+                      : const Color(0xFFEFEBE4),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -904,21 +959,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 28),
 
-            // Categories Shimmer
-            Row(
-              children: List.generate(4, (index) => Expanded(
-                child: Container(
-                  margin: EdgeInsets.only(right: index == 3 ? 0 : 8),
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              )),
-            ),
-            const SizedBox(height: 28),
-
             // Featured Hero Card Shimmer
             Container(
               height: 280,
@@ -942,6 +982,21 @@ class _HomeScreenState extends State<HomeScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+              )),
+            ),
+            const SizedBox(height: 32),
+
+            // Categories Shimmer
+            Row(
+              children: List.generate(4, (index) => Expanded(
+                child: Container(
+                  margin: EdgeInsets.only(right: index == 3 ? 0 : 8),
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               )),

@@ -107,7 +107,7 @@ class SupabaseDataSource {
           .toList();
     }
 
-    var request = _client.from('recipes').select();
+    var request = _client.from('recipes').select().isFilter('deleted_at', null);
 
     if (category != null && category.isNotEmpty) {
       final catResp = await _client
@@ -142,7 +142,8 @@ class SupabaseDataSource {
     final response = await _client
         .from('recipes')
         .select()
-        .eq('is_featured', true);
+        .eq('is_featured', true)
+        .isFilter('deleted_at', null);
     return (response as List)
         .map((json) => RecipeModel.fromJson(json))
         .toList();
@@ -153,7 +154,8 @@ class SupabaseDataSource {
     final response = await _client
         .from('recipes')
         .select()
-        .eq('is_trending', true);
+        .eq('is_trending', true)
+        .isFilter('deleted_at', null);
     return (response as List)
         .map((json) => RecipeModel.fromJson(json))
         .toList();
@@ -243,7 +245,8 @@ class SupabaseDataSource {
         .select('recipes(*)')
         .eq('user_id', userId);
     return (response as List)
-        .map((json) => RecipeModel.fromJson(json['recipes']))
+        .where((json) => json['recipes'] != null && json['recipes']['deleted_at'] == null)
+        .map((json) => RecipeModel.fromJson(json['recipes'] as Map<String, dynamic>))
         .toList();
   }
 
@@ -253,7 +256,10 @@ class SupabaseDataSource {
         .select('created_at, recipes(*)')
         .eq('user_id', userId)
         .order('created_at', ascending: false);
-    return (response as List).map((json) => json as Map<String, dynamic>).toList();
+    return (response as List)
+        .where((json) => json['recipes'] != null && json['recipes']['deleted_at'] == null)
+        .map((json) => json as Map<String, dynamic>)
+        .toList();
   }
 
   Future<void> addFavorite(String userId, String recipeId) async {
@@ -280,7 +286,8 @@ class SupabaseDataSource {
         .order('viewed_at', ascending: false)
         .limit(10);
     return (response as List)
-        .map((json) => RecipeModel.fromJson(json['recipes']))
+        .where((json) => json['recipes'] != null && json['recipes']['deleted_at'] == null)
+        .map((json) => RecipeModel.fromJson(json['recipes'] as Map<String, dynamic>))
         .toList();
   }
 
