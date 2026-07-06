@@ -640,8 +640,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     )
                   : Image.asset(
-                      AppImages.heroBanner,
+                      imageUrl.isNotEmpty ? imageUrl : AppImages.heroBanner,
                       fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Image.asset(
+                        AppImages.heroBanner,
+                        fit: BoxFit.cover,
+                      ),
                     ),
             ),
           ),
@@ -948,8 +952,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           )
                         : Image.asset(
-                            item.imageUrl,
+                            item.imageUrl.isNotEmpty ? item.imageUrl : AppImages.recipeRamen,
                             fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Image.asset(
+                              AppImages.recipeRamen,
+                              fit: BoxFit.cover,
+                            ),
                           ),
                   ),
                 ),

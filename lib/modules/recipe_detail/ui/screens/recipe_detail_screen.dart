@@ -174,6 +174,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   : Image.asset(
                       state.imageUrl.isNotEmpty ? state.imageUrl : AppImages.recipeRamen,
                       fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Image.asset(
+                        AppImages.recipeRamen,
+                        fit: BoxFit.cover,
+                      ),
                     ),
             ),
           ),

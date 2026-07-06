@@ -615,8 +615,12 @@ class _SearchScreenState extends State<SearchScreen> {
                                   ),
                                 )
                               : Image.asset(
-                                  item.imageUrl,
+                                  item.imageUrl.isNotEmpty ? item.imageUrl : AppImages.recipeRamen,
                                   fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Image.asset(
+                                    AppImages.recipeRamen,
+                                    fit: BoxFit.cover,
+                                  ),
                                 ),
                         ),
                       ),
