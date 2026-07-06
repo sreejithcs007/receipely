@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../router/routes.dart';
 import '../../../../shared/core/constants/asset_constants.dart';
 import '../../../../shared/widgets/avatar/profile_avatar.dart';
@@ -14,72 +15,7 @@ import '../../bloc/home_bloc.dart';
 import '../../bloc/home_event.dart';
 import '../../bloc/home_state.dart';
 
-IconData _getCategoryIcon(String name) {
-  switch (name.toLowerCase()) {
-    case 'breakfast':
-      return Icons.wb_sunny_rounded;
-    case 'lunch':
-      return Icons.eco_rounded;
-    case 'dinner':
-      return Icons.dinner_dining_rounded;
-    case 'desserts':
-    case 'dessert':
-      return Icons.cake_rounded;
-    case 'snacks':
-    case 'snack':
-      return Icons.cookie_rounded;
-    case 'appetizers':
-      return Icons.restaurant_menu_rounded;
-    case 'soups':
-      return Icons.soup_kitchen_rounded;
-    case 'salads':
-      return Icons.restaurant_rounded;
-    case 'beverages':
-      return Icons.local_cafe_rounded;
-    case 'bakery':
-      return Icons.bakery_dining_rounded;
-    case 'seafood':
-      return Icons.set_meal_rounded;
-    default:
-      return Icons.restaurant_menu_rounded;
-  }
-}
 
-Color _getCategoryActiveBgColor(String name) {
-  switch (name.toLowerCase()) {
-    case 'breakfast':
-      return const Color(0xFFFFF2D9);
-    case 'lunch':
-      return const Color(0xFFEAF5E3);
-    case 'dinner':
-      return const Color(0xFFFDECEB);
-    case 'desserts':
-    case 'dessert':
-      return const Color(0xFFFAF0F5);
-    case 'snacks':
-      return const Color(0xFFFFF2D9);
-    default:
-      return const Color(0xFFFFF2D9);
-  }
-}
-
-Color _getCategoryIconColor(String name) {
-  switch (name.toLowerCase()) {
-    case 'breakfast':
-      return const Color(0xFFF47B20);
-    case 'lunch':
-      return const Color(0xFF4CAF50);
-    case 'dinner':
-      return const Color(0xFFE91E63);
-    case 'desserts':
-    case 'dessert':
-      return const Color(0xFF9C27B0);
-    case 'snacks':
-      return const Color(0xFFF47B20);
-    default:
-      return const Color(0xFFF47B20);
-  }
-}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -89,7 +25,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _activeCategoryIndex = 0;
   int _currentFeaturedPageIndex = 0;
 
   @override
@@ -181,9 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
             final categories = state.categories
                 .map((c) => CategoryItem(
                       label: c.name,
-                      icon: _getCategoryIcon(c.name),
-                      activeBgColor: _getCategoryActiveBgColor(c.name),
-                      iconColor: _getCategoryIconColor(c.name),
+                      imageUrl: c.imageUrl,
                     ))
                 .toList();
 
@@ -234,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 32),
 
                       // ── Categories Horizontal List ──────────────────────────────
-                      _buildCategoriesList(categories),
+                      _buildCategoriesSection(context, categories),
                     ],
                   ),
                 ),
@@ -358,9 +291,213 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildCategoriesSection(BuildContext context, List<CategoryItem> categories) {
+    final displayedCategories = categories.take(5).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Categories',
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF1F1E1C),
+              ),
+            ),
+            GestureDetector(
+              onTap: () => _showAllCategoriesBottomSheet(context, categories),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'View all',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFF47B20),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: Color(0xFFF47B20),
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildCategoriesList(displayedCategories),
+      ],
+    );
+  }
+
+  void _showAllCategoriesBottomSheet(BuildContext context, List<CategoryItem> categories) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (dialogContext) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFFFAF7F2),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(28),
+              topRight: Radius.circular(28),
+            ),
+          ),
+          padding: const EdgeInsets.only(left: 24, right: 24, top: 20, bottom: 30),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFEBE4),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'All Categories',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1F1E1C),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Flexible(
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 0.85,
+                  ),
+                  itemCount: categories.length,
+                  itemBuilder: (ctx, index) {
+                    final item = categories[index];
+                    return _buildCategoryCard(context, item);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _resolveCategoryImageUrl(String url) {
+    if (url.startsWith('http')) return url;
+    if (url.startsWith('assets/')) return url;
+    try {
+      final parts = url.split('/');
+      if (parts.length >= 2) {
+        final bucket = parts[0];
+        final path = parts.sublist(1).join('/');
+        return Supabase.instance.client.storage.from(bucket).getPublicUrl(path);
+      }
+    } catch (_) {}
+    return url;
+  }
+
+  Widget _buildCategoryCard(BuildContext context, CategoryItem item) {
+    final resolvedUrl = _resolveCategoryImageUrl(item.imageUrl);
+    final isAsset = resolvedUrl.startsWith('assets/');
+
+    return GestureDetector(
+      onTap: () {
+        SearchRoute(category: item.label).go(context);
+      },
+      child: Container(
+        width: 110,
+        height: 130,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF3A2818).withValues(alpha: 0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Background Image
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: isAsset
+                    ? Image.asset(resolvedUrl, fit: BoxFit.cover)
+                    : Image.network(
+                        resolvedUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: const Color(0xFFFFF2D9),
+                          child: const Icon(Icons.restaurant_rounded, color: Color(0xFFF47B20)),
+                        ),
+                      ),
+              ),
+            ),
+            // Dark Overlay
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.2),
+                      Colors.black.withValues(alpha: 0.75),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Text at bottom center
+            Positioned(
+              bottom: 12,
+              left: 8,
+              right: 8,
+              child: Text(
+                item.label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildCategoriesList(List<CategoryItem> categories) {
     return SizedBox(
-      height: 44,
+      height: 130,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
@@ -368,46 +505,7 @@ class _HomeScreenState extends State<HomeScreen> {
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final item = categories[index];
-          final isActive = _activeCategoryIndex == index;
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _activeCategoryIndex = index;
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: isActive ? item.activeBgColor : Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isActive
-                      ? item.iconColor.withValues(alpha: 0.25)
-                      : const Color(0xFFEFEBE4),
-                  width: 1.2,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    item.icon,
-                    size: 18,
-                    color: isActive ? item.iconColor : const Color(0xFF8C8A87),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    item.label,
-                    style: GoogleFonts.poppins(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1F1E1C),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
+          return _buildCategoryCard(context, item);
         },
       ),
     );
@@ -993,10 +1091,10 @@ class _HomeScreenState extends State<HomeScreen> {
               children: List.generate(4, (index) => Expanded(
                 child: Container(
                   margin: EdgeInsets.only(right: index == 3 ? 0 : 8),
-                  height: 40,
+                  height: 130,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                 ),
               )),
@@ -1010,14 +1108,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class CategoryItem {
   final String label;
-  final IconData icon;
-  final Color activeBgColor;
-  final Color iconColor;
+  final String imageUrl;
   CategoryItem({
     required this.label,
-    required this.icon,
-    required this.activeBgColor,
-    required this.iconColor,
+    required this.imageUrl,
   });
 }
 
