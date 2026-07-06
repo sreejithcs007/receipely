@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../router/routes.dart';
 import '../../../../shared/core/constants/asset_constants.dart';
+import '../../../../shared/di/service_locator.dart';
+import '../../../../shared/services/storage_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Per-slide theme data
@@ -131,6 +133,15 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   void _onPageChanged(int page) => setState(() => _currentPage = page);
 
+  Future<void> _completeOnboarding() async {
+    try {
+      await getIt<StorageService>().write('has_seen_onboarding', 'true');
+    } catch (_) {}
+    if (mounted) {
+      const LoginRoute().go(context);
+    }
+  }
+
   void _next() {
     if (_currentPage < _slides.length - 1) {
       _pageController.nextPage(
@@ -138,7 +149,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         curve: Curves.easeInOut,
       );
     } else {
-      const LoginRoute().go(context);
+      _completeOnboarding();
     }
   }
 
@@ -160,7 +171,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 child: Padding(
                   padding: const EdgeInsets.only(right: 20, top: 8),
                   child: TextButton(
-                    onPressed: () => const LoginRoute().go(context),
+                    onPressed: _completeOnboarding,
                     child: Text(
                       'Skip',
                       style: TextStyle(

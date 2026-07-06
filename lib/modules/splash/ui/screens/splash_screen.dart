@@ -2,6 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:receipe_flutter/shared/core/constants/asset_constants.dart';
+import 'package:receipe_flutter/shared/di/service_locator.dart';
+import 'package:receipe_flutter/shared/services/storage_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../router/routes.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -15,10 +18,32 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // Auto-navigate to onboarding after 3 seconds
-    Timer(const Duration(seconds: 3), () {
+    _checkRedirect();
+  }
+
+  Future<void> _checkRedirect() async {
+    await Future.delayed(const Duration(seconds: 3));
+    if (!mounted) return;
+
+    try {
+      final storage = getIt<StorageService>();
+      final hasSeenOnboarding = await storage.read('has_seen_onboarding');
+
+      if (!mounted) return;
+
+      if (hasSeenOnboarding == 'true') {
+        final session = Supabase.instance.client.auth.currentSession;
+        if (session != null) {
+          const HomeRoute().go(context);
+        } else {
+          const LoginRoute().go(context);
+        }
+      } else {
+        const OnboardingRoute().go(context);
+      }
+    } catch (_) {
       if (mounted) const OnboardingRoute().go(context);
-    });
+    }
   }
 
   @override

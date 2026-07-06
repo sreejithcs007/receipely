@@ -188,6 +188,16 @@ class _HomeScreenState extends State<HomeScreen> {
             : 'Sarah';
     final displayName = nameToSplit.split(' ').first;
     final avatarUrl = profile?.avatarUrl ?? '';
+    final hour = DateTime.now().hour;
+    final String greeting;
+    if (hour < 12) {
+      greeting = 'Good morning, ';
+    } else if (hour < 17) {
+      greeting = 'Good afternoon, ';
+    } else {
+      greeting = 'Good evening, ';
+    }
+
     return Row(
       children: [
         Expanded(
@@ -198,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 text: TextSpan(
-                  text: 'Good morning, ',
+                  text: greeting,
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
@@ -525,6 +535,7 @@ class _HomeScreenState extends State<HomeScreen> {
         SizedBox(
           height: 320,
           child: PageView.builder(
+            controller: PageController(viewportFraction: 0.94),
             itemCount: featuredRecipes.length,
             onPageChanged: (index) {
               setState(() {
@@ -535,10 +546,13 @@ class _HomeScreenState extends State<HomeScreen> {
             itemBuilder: (context, index) {
               final recipe = featuredRecipes[index];
               final isFavorited = favoriteRecipeIds.contains(recipe.id);
-              return _buildFeaturedCard(
-                context,
-                recipe,
-                isFavorited: isFavorited,
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                child: _buildFeaturedCard(
+                  context,
+                  recipe,
+                  isFavorited: isFavorited,
+                ),
               );
             },
           ),
@@ -715,46 +729,57 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.access_time_rounded,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          cookTime,
-                          style: GoogleFonts.poppins(
+                    Expanded(
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.access_time_rounded,
                             color: Colors.white,
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w500,
+                            size: 16,
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        const Icon(
-                          Icons.local_fire_department_rounded,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          calories,
-                          style: GoogleFonts.poppins(
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              cookTime,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          const Icon(
+                            Icons.local_fire_department_rounded,
                             color: Colors.white,
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w500,
+                            size: 16,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              calories,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => RecipeDetailRoute(recipeId: recipe?.id ?? 'r0000000-0000-0000-0000-000000000001')
                           .push(context),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
+                          horizontal: 12,
+                          vertical: 8,
                         ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF47B20),
@@ -767,11 +792,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               'View Recipe',
                               style: GoogleFonts.poppins(
                                 color: Colors.white,
-                                fontSize: 12.5,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 2),
                             const Icon(
                               Icons.chevron_right_rounded,
                               color: Colors.white,
