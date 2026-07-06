@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:shimmer/shimmer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../router/routes.dart';
 import '../../../../shared/core/constants/asset_constants.dart';
 import '../../../../shared/di/service_locator.dart';
 import '../../../../shared/data/repositories/recipe_repository.dart';
 import '../../../../shared/data/repositories/user_repository.dart';
+import '../../../../shared/widgets/loader/shimmer_card.dart';
 import '../../bloc/profile_bloc.dart';
 import '../../bloc/profile_event.dart';
 import '../../bloc/profile_state.dart';
@@ -819,72 +819,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileShimmer(BuildContext context) {
-    return Shimmer.fromColors(
-      baseColor: const Color(0xFFEFEBE4),
-      highlightColor: const Color(0xFFF5F3EE),
-      child: Column(
-        children: [
-          // Avatar circle
-          Center(
-            child: Container(
-              width: 110,
-              height: 110,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-              ),
-            ),
+    return Column(
+      children: [
+        // Avatar circle
+        const Center(
+          child: CustomShimmer(
+            width: 110,
+            height: 110,
+            shape: BoxShape.circle,
           ),
-          const SizedBox(height: 16),
-          // Name placeholder
-          Container(width: 180, height: 22, color: Colors.white),
-          const SizedBox(height: 6),
-          // Level placeholder
-          Container(width: 100, height: 14, color: Colors.white),
-          const SizedBox(height: 24),
-          
-          // Stats Card
-          Container(
-            height: 80,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-            ),
-          ),
-          const SizedBox(height: 32),
-          
-          // Achievements Title
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Container(width: 140, height: 20, color: Colors.white),
-          ),
-          const SizedBox(height: 16),
-          // Achievements Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(3, (index) => Container(
-              width: 80,
-              height: 100,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-            )),
-          ),
-          const SizedBox(height: 32),
-          
-          // Actions Card
-          Container(
-            height: 180,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-            ),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 16),
+        // Name placeholder
+        CustomShimmer(width: 180, height: 22, borderRadius: BorderRadius.circular(6)),
+        const SizedBox(height: 6),
+        // Level placeholder
+        CustomShimmer(width: 100, height: 14, borderRadius: BorderRadius.circular(4)),
+        const SizedBox(height: 24),
+        
+        // Stats Card
+        CustomShimmer(
+          height: 80,
+          width: double.infinity,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        const SizedBox(height: 32),
+        
+        // Achievements Title
+        Align(
+          alignment: Alignment.centerLeft,
+          child: CustomShimmer(width: 140, height: 20, borderRadius: BorderRadius.circular(6)),
+        ),
+        const SizedBox(height: 16),
+        // Achievements Row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: List.generate(3, (index) => CustomShimmer(
+            width: 80,
+            height: 100,
+            borderRadius: BorderRadius.circular(16),
+          )),
+        ),
+        const SizedBox(height: 32),
+        
+        // Actions Card Placeholder
+        CustomShimmer(
+          height: 180,
+          width: double.infinity,
+          borderRadius: BorderRadius.circular(24),
+        ),
+      ],
     );
   }
 }

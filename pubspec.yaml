@@ -64,7 +64,6 @@ dependencies:
   cached_network_image: ^3.3.1
 
   # UI Helpers
-  shimmer: ^3.0.0
   flutter_svg: ^2.0.10+1
   envied: ^0.5.4
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:shimmer/shimmer.dart';
+import '../../../../shared/widgets/loader/shimmer_card.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../router/routes.dart';
 import '../../../../shared/core/constants/asset_constants.dart';
@@ -1079,88 +1079,78 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHomeShimmer(BuildContext context) {
-    return Shimmer.fromColors(
-      baseColor: const Color(0xFFEFEBE4),
-      highlightColor: const Color(0xFFF5F3EE),
-      child: SingleChildScrollView(
-        physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header Row Shimmer
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(width: 140, height: 28, color: Colors.white),
-                      const SizedBox(height: 8),
-                      Container(width: 200, height: 16, color: Colors.white),
-                    ],
-                  ),
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Row Shimmer
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CustomShimmer(width: 140, height: 28, borderRadius: BorderRadius.circular(8)),
+                    const SizedBox(height: 8),
+                    CustomShimmer(width: 200, height: 16, borderRadius: BorderRadius.circular(6)),
+                  ],
                 ),
-                const SizedBox(width: 16),
-                Container(width: 48, height: 48, decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white)),
-              ],
-            ),
-            const SizedBox(height: 28),
-
-            // Search Bar Shimmer
-            Container(
-              height: 52,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
               ),
-            ),
-            const SizedBox(height: 28),
+              const SizedBox(width: 16),
+              const CustomShimmer(width: 48, height: 48, shape: BoxShape.circle),
+            ],
+          ),
+          const SizedBox(height: 28),
 
-            // Featured Hero Card Shimmer
-            Container(
-              height: 280,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-              ),
-            ),
-            const SizedBox(height: 32),
+          // Search Bar Shimmer
+          CustomShimmer(
+            height: 52,
+            width: double.infinity,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          const SizedBox(height: 28),
 
-            // Trending Section Header Shimmer
-            Container(width: 180, height: 24, color: Colors.white),
-            const SizedBox(height: 16),
+          // Featured Hero Card Shimmer
+          CustomShimmer(
+            height: 280,
+            width: double.infinity,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          const SizedBox(height: 32),
 
-            // Trending Recipes list Shimmer
-            Row(
-              children: List.generate(2, (index) => Expanded(
-                child: Container(
-                  margin: EdgeInsets.only(right: index == 1 ? 0 : 16),
+          // Trending Section Header Shimmer
+          CustomShimmer(width: 180, height: 24, borderRadius: BorderRadius.circular(6)),
+          const SizedBox(height: 16),
+
+          // Trending Recipes list Shimmer
+          Row(
+            children: List.generate(2, (index) => Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(right: index == 1 ? 0 : 16),
+                child: CustomShimmer(
                   height: 250,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-              )),
-            ),
-            const SizedBox(height: 32),
+              ),
+            )),
+          ),
+          const SizedBox(height: 32),
 
-            // Categories Shimmer
-            Row(
-              children: List.generate(4, (index) => Expanded(
-                child: Container(
-                  margin: EdgeInsets.only(right: index == 3 ? 0 : 8),
+          // Categories Shimmer
+          Row(
+            children: List.generate(4, (index) => Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(right: index == 3 ? 0 : 8),
+                child: CustomShimmer(
                   height: 130,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-              )),
-            ),
-          ],
-        ),
+              ),
+            )),
+          ),
+        ],
       ),
     );
   }
