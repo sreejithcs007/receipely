@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../modules/splash/ui/screens/splash_screen.dart';
@@ -151,72 +152,44 @@ class NotificationsRoute extends GoRouteData {
 
 // ── Placeholder Layouts and Screens ───────────────────────────────────────
 
-class MainLayout extends StatelessWidget {
+class MainLayout extends StatefulWidget {
   final Widget child;
   const MainLayout({required this.child, super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final selectedIndex = _calculateSelectedIndex(context);
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAF7F2),
-      body: child,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 16,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildNavItem(
-                  context,
-                  index: 0,
-                  icon: Icons.home_filled,
-                  inactiveIcon: Icons.home_outlined,
-                  label: 'Home',
-                  isSelected: selectedIndex == 0,
-                ),
-                _buildNavItem(
-                  context,
-                  index: 1,
-                  icon: Icons.search,
-                  inactiveIcon: Icons.search,
-                  label: 'Search',
-                  isSelected: selectedIndex == 1,
-                ),
-                _buildNavItem(
-                  context,
-                  index: 3,
-                  icon: Icons.favorite,
-                  inactiveIcon: Icons.favorite_border,
-                  label: 'Favorites',
-                  isSelected: selectedIndex == 3,
-                ),
-                _buildNavItem(
-                  context,
-                  index: 4,
-                  icon: Icons.person,
-                  inactiveIcon: Icons.person_outline,
-                  label: 'Profile',
-                  isSelected: selectedIndex == 4,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+  State<MainLayout> createState() => _MainLayoutState();
+}
+
+class _MainLayoutState extends State<MainLayout> {
+  DateTime? _lastPressedAt;
+
+  int _calculateSelectedIndex(BuildContext context) {
+    final String location = GoRouterState.of(context).uri.toString();
+    if (location.startsWith('/search')) return 1;
+    if (location.startsWith('/meal-planner')) return 2;
+    if (location.startsWith('/favorites')) return 3;
+    if (location.startsWith('/profile')) return 4;
+    return 0;
+  }
+
+  void _onTap(BuildContext context, int index) {
+    switch (index) {
+      case 0:
+        const HomeRoute().go(context);
+        break;
+      case 1:
+        const SearchRoute().go(context);
+        break;
+      case 2:
+        const MealPlannerRoute().go(context);
+        break;
+      case 3:
+        const FavoritesRoute().go(context);
+        break;
+      case 4:
+        const ProfileRoute().go(context);
+        break;
+    }
   }
 
   Widget _buildNavItem(
@@ -255,34 +228,111 @@ class MainLayout extends StatelessWidget {
     );
   }
 
+  @override
+  Widget build(BuildContext context) {
+    final selectedIndex = _calculateSelectedIndex(context);
+    return PopScope(
+      canPop: false,
+      // ignore: deprecated_member_use
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
 
-  int _calculateSelectedIndex(BuildContext context) {
-    final String location = GoRouterState.of(context).uri.toString();
-    if (location.startsWith('/search')) return 1;
-    if (location.startsWith('/meal-planner')) return 2;
-    if (location.startsWith('/favorites')) return 3;
-    if (location.startsWith('/profile')) return 4;
-    return 0;
-  }
+        // If not on Home screen/tab, navigate back to Home screen/tab first
+        if (selectedIndex != 0) {
+          const HomeRoute().go(context);
+          return;
+        }
 
-  void _onTap(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        const HomeRoute().go(context);
-        break;
-      case 1:
-        const SearchRoute().go(context);
-        break;
-      case 2:
-        const MealPlannerRoute().go(context);
-        break;
-      case 3:
-        const FavoritesRoute().go(context);
-        break;
-      case 4:
-        const ProfileRoute().go(context);
-        break;
-    }
+        final now = DateTime.now();
+        final backButtonHasNotBeenPressedOrTimeHasExpired =
+            _lastPressedAt == null || now.difference(_lastPressedAt!) > const Duration(seconds: 2);
+
+        if (backButtonHasNotBeenPressedOrTimeHasExpired) {
+          _lastPressedAt = now;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Swipe back again to exit',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+              duration: const Duration(seconds: 2),
+              backgroundColor: const Color(0xFF1F1E1C),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+          return;
+        }
+
+        // Close the app
+        await SystemNavigator.pop();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFFAF7F2),
+        body: widget.child,
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 16,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildNavItem(
+                    context,
+                    index: 0,
+                    icon: Icons.home_filled,
+                    inactiveIcon: Icons.home_outlined,
+                    label: 'Home',
+                    isSelected: selectedIndex == 0,
+                  ),
+                  _buildNavItem(
+                    context,
+                    index: 1,
+                    icon: Icons.search,
+                    inactiveIcon: Icons.search,
+                    label: 'Search',
+                    isSelected: selectedIndex == 1,
+                  ),
+                  _buildNavItem(
+                    context,
+                    index: 3,
+                    icon: Icons.favorite,
+                    inactiveIcon: Icons.favorite_border,
+                    label: 'Favorites',
+                    isSelected: selectedIndex == 3,
+                  ),
+                  _buildNavItem(
+                    context,
+                    index: 4,
+                    icon: Icons.person,
+                    inactiveIcon: Icons.person_outline,
+                    label: 'Profile',
+                    isSelected: selectedIndex == 4,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
