@@ -549,6 +549,14 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildRecipesGrid(BuildContext context, SearchState state) {
+    final isPopularRecipes = state.query.isEmpty &&
+        state.cuisineFilter == null &&
+        state.dietFilter == null &&
+        state.timeFilter == null;
+    final displayCount = isPopularRecipes
+        ? (state.results.length > 4 ? 4 : state.results.length)
+        : state.results.length;
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -558,7 +566,7 @@ class _SearchScreenState extends State<SearchScreen> {
         mainAxisSpacing: 16,
         mainAxisExtent: 220,
       ),
-      itemCount: state.results.length,
+      itemCount: displayCount,
       itemBuilder: (context, index) {
         final item = state.results[index];
         return GestureDetector(
