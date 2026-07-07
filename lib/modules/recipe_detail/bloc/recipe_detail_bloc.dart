@@ -35,6 +35,7 @@ class RecipeDetailBloc extends Bloc<RecipeDetailEvent, RecipeDetailState> {
     on<NextStep>(_onNextStep);
     on<PrevStep>(_onPrevStep);
     on<CancelCooking>(_onCancelCooking);
+    on<CompleteCooking>(_onCompleteCooking);
   }
 
   Future<void> _onLoadRecipeDetail(LoadRecipeDetail event, Emitter<RecipeDetailState> emit) async {
@@ -118,5 +119,15 @@ class RecipeDetailBloc extends Bloc<RecipeDetailEvent, RecipeDetailState> {
 
   void _onCancelCooking(CancelCooking event, Emitter<RecipeDetailState> emit) {
     emit(state.copyWith(isCooking: false, currentCookingStep: 0));
+  }
+
+  Future<void> _onCompleteCooking(CompleteCooking event, Emitter<RecipeDetailState> emit) async {
+    emit(state.copyWith(isCooking: false, currentCookingStep: 0));
+    final user = _userRepository.getCurrentUser();
+    if (user != null) {
+      try {
+        await _userRepository.markRecipeAsCooked(user.id, state.recipeId);
+      } catch (_) {}
+    }
   }
 }

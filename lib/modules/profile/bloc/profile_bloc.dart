@@ -5,6 +5,7 @@ import 'profile_event.dart';
 import 'profile_state.dart';
 
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
+  // ignore: unused_field
   final RecipeRepository _recipeRepository;
   final UserRepository _userRepository;
 
@@ -30,14 +31,14 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       if (user != null) {
         final profile = await _userRepository.getUserProfile(user.id);
         final favorites = await _userRepository.getFavorites(user.id);
-        final viewed = await _recipeRepository.getRecentlyViewed(user.id);
+        final cooked = await _userRepository.getCookedRecipes(user.id);
 
         emit(state.copyWith(
           name: profile.name,
           level: profile.chefLevel,
           imageUrl: profile.avatarUrl,
           savedCount: favorites.length,
-          cookedCount: viewed.length,
+          cookedCount: cooked.length,
           isLoading: false,
           showHelpBottomSheet: false,
         ));

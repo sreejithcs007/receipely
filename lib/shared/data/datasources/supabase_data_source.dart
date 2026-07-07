@@ -420,4 +420,66 @@ class SupabaseDataSource {
       'active_theme': activeTheme,
     });
   }
+
+  Future<void> markRecipeAsCooked(String userId, String recipeId) async {
+    final profile = await getUserProfile(userId);
+    final newCount = profile.cookedCount + 1;
+
+    await _client
+        .from('users')
+        .update({'cooked_count': newCount})
+        .eq('id', userId);
+
+    await _client.from('user_activity').insert({
+      'user_id': userId,
+      'activity_type': 'cook',
+      'meta_data': {'recipe_id': recipeId},
+    });
+  }
+
+  Future<List<RecipeModel>> getCookedRecipes(String userId) async {
+    final response = await _client
+        .from('user_activity')
+        .select('meta_data')
+        .eq('user_id', userId)
+        .eq('activity_type', 'cook')
+        .order('created_at', ascending: false);
+
+    final list = response as List;
+    if (list.isEmpty) return [];
+
+    final recipeIds = list
+        .map((item) {
+          final meta = item['meta_data'];
+          if (meta is Map) {
+            return meta['recipe_id'] as String?;
+          }
+          return null;
+        })
+        .whereType<String>()
+        .toSet()
+        .toList();
+
+    if (recipeIds.isEmpty) return [];
+
+    final recipesResp = await _client
+        .from('recipes')
+        .select()
+        .inFilter('id', recipeIds)
+        .isFilter('deleted_at', null);
+
+    final recipesList = (recipesResp as List)
+        .map((json) => RecipeModel.fromJson(json))
+        .toList();
+
+    final orderedRecipes = <RecipeModel>[];
+    for (final id in recipeIds) {
+      final matches = recipesList.where((r) => r.id == id);
+      if (matches.isNotEmpty) {
+        orderedRecipes.add(matches.first);
+      }
+    }
+
+    return orderedRecipes;
+  }
 }

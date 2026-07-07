@@ -799,8 +799,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         ),
                         onPressed: () {
                           if (isLastStep) {
-                            // Show beautiful success dialog and cancel cooking state
-                            context.read<RecipeDetailBloc>().add(CancelCooking());
+                            // Show beautiful success dialog and complete cooking state
+                            context.read<RecipeDetailBloc>().add(CompleteCooking());
                             _showSuccessDialog(context, state.title);
                           } else {
                             context.read<RecipeDetailBloc>().add(NextStep());

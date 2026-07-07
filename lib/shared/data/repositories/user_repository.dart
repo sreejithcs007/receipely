@@ -89,4 +89,12 @@ class UserRepository {
       activeTheme: activeTheme,
     );
   }
+
+  Future<void> markRecipeAsCooked(String userId, String recipeId) async {
+    await _dataSource.markRecipeAsCooked(userId, recipeId);
+  }
+
+  Future<List<RecipeModel>> getCookedRecipes(String userId) async {
+    return await _dataSource.getCookedRecipes(userId);
+  }
 }

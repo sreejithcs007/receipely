@@ -40,3 +40,5 @@ class NextStep extends RecipeDetailEvent {}
 class PrevStep extends RecipeDetailEvent {}
 
 class CancelCooking extends RecipeDetailEvent {}
+
+class CompleteCooking extends RecipeDetailEvent {}

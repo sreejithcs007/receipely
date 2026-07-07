@@ -8,6 +8,7 @@ import '../../../../shared/core/constants/asset_constants.dart';
 import '../../../../shared/di/service_locator.dart';
 import '../../../../shared/data/repositories/recipe_repository.dart';
 import '../../../../shared/data/repositories/user_repository.dart';
+import '../../../../shared/data/models/recipe_model.dart';
 import '../../../../shared/widgets/loader/shimmer_card.dart';
 import '../../bloc/profile_bloc.dart';
 import '../../bloc/profile_event.dart';
@@ -240,34 +241,235 @@ class _ProfileScreenState extends State<ProfileScreen> {
             height: 52,
             color: const Color(0xFFEFEBE4),
           ),
-          // Cooked Column
           Expanded(
-            child: Column(
-              children: [
-                const Icon(Icons.soup_kitchen_outlined, color: Color(0xFF4CAF50), size: 24),
-                const SizedBox(height: 6),
-                Text(
-                  'Cooked',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12.5,
-                    color: const Color(0xFF8C8A87),
-                    fontWeight: FontWeight.w500,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _showCookedRecipesBottomSheet(context),
+              child: Column(
+                children: [
+                  const Icon(Icons.soup_kitchen_outlined, color: Color(0xFF4CAF50), size: 24),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Cooked',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.5,
+                      color: const Color(0xFF8C8A87),
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${state.cookedCount}',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF1F1E1C),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${state.cookedCount}',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1F1E1C),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  void _showCookedRecipesBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final user = getIt<UserRepository>().getCurrentUser();
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: Color(0xFFFAF7F2),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Bottom sheet drag handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFEBE4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Cooked Recipes',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1F1E1C),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color(0xFFEFEBE4),
+                      ),
+                      child: const Icon(Icons.close_rounded, size: 16, color: Color(0xFF8C8A87)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: FutureBuilder<List<RecipeModel>>(
+                  future: user != null
+                      ? getIt<UserRepository>().getCookedRecipes(user.id)
+                      : Future.value([]),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFFF47B20),
+                        ),
+                      );
+                    }
+                    if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.soup_kitchen_rounded,
+                              size: 48,
+                              color: Color(0xFFB5B3B0),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              "No cooked recipes yet",
+                              style: GoogleFonts.poppins(
+                                fontSize: 15,
+                                color: const Color(0xFF8C8A87),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Start cooking and tap Finish to save!",
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                color: const Color(0xFFB5B3B0),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    final cookedList = snapshot.data!;
+                    return ListView.builder(
+                      itemCount: cookedList.length,
+                      itemBuilder: (context, index) {
+                        final recipe = cookedList[index];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFEFEBE4), width: 1),
+                          ),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.all(8),
+                            leading: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: SizedBox(
+                                width: 56,
+                                height: 56,
+                                child: recipe.imageUrl.startsWith('http')
+                                    ? CachedNetworkImage(
+                                        imageUrl: recipe.imageUrl,
+                                        fit: BoxFit.cover,
+                                        placeholder: (context, url) => Container(
+                                          color: const Color(0xFFEFEBE4),
+                                        ),
+                                        errorWidget: (context, url, error) => Image.asset(
+                                          AppImages.recipeRamen,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      )
+                                    : Image.asset(
+                                        recipe.imageUrl.isNotEmpty
+                                            ? recipe.imageUrl
+                                            : AppImages.recipeRamen,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Image.asset(
+                                          AppImages.recipeRamen,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            title: Text(
+                              recipe.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF1F1E1C),
+                              ),
+                            ),
+                            subtitle: Row(
+                              children: [
+                                const Icon(Icons.schedule_rounded, size: 14, color: Color(0xFF8C8A87)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  recipe.cookTime,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    color: const Color(0xFF8C8A87),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                const Icon(Icons.bolt_rounded, size: 14, color: Color(0xFF8C8A87)),
+                                const SizedBox(width: 2),
+                                Text(
+                                  recipe.calories,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    color: const Color(0xFF8C8A87),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            trailing: const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 14,
+                              color: Color(0xFF8C8A87),
+                            ),
+                            onTap: () {
+                              Navigator.pop(context);
+                              RecipeDetailRoute(recipeId: recipe.id).push(context);
+                            },
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
