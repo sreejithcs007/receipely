@@ -50,39 +50,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
             final isMain = state.activeSubSection == 'main';
             final title = _getSectionTitle(state.activeSubSection);
 
-            return Scaffold(
-              backgroundColor: const Color(0xFFFAF7F2), // Canvas
-              appBar: AppBar(
-                backgroundColor: const Color(0xFFFAF7F2),
-                elevation: 0,
-                leading: GestureDetector(
-                  onTap: () {
-                    if (isMain) {
-                      Navigator.pop(context);
-                    } else {
-                      context.read<SettingsBloc>().add(const SelectSubSection('main'));
-                    }
-                  },
-                  child: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: Color(0xFF1F1E1C),
-                    size: 20,
+            return PopScope(
+              canPop: isMain,
+              // ignore: deprecated_member_use
+              onPopInvoked: (didPop) {
+                if (didPop) return;
+                context.read<SettingsBloc>().add(const SelectSubSection('main'));
+              },
+              child: Scaffold(
+                backgroundColor: const Color(0xFFFAF7F2), // Canvas
+                appBar: AppBar(
+                  backgroundColor: const Color(0xFFFAF7F2),
+                  elevation: 0,
+                  leading: GestureDetector(
+                    onTap: () {
+                      if (isMain) {
+                        Navigator.pop(context);
+                      } else {
+                        context.read<SettingsBloc>().add(const SelectSubSection('main'));
+                      }
+                    },
+                    child: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Color(0xFF1F1E1C),
+                      size: 20,
+                    ),
                   ),
-                ),
-                title: Text(
-                  title,
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF1F1E1C),
+                  title: Text(
+                    title,
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1F1E1C),
+                    ),
                   ),
-                ),
-                centerTitle: true,
-              ),
-              body: SafeArea(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: _buildBody(context, state),
+                  centerTitle: true,
+                  ),
+                body: SafeArea(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: _buildBody(context, state),
+                  ),
                 ),
               ),
             );
