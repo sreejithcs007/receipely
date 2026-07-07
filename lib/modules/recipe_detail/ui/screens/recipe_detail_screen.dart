@@ -129,7 +129,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     ),
 
                     // Sticky Bottom CTA Action Bar
-                    _buildBottomBar(context),
+                    _buildBottomBar(context, state),
                   ],
                 ),
 
@@ -584,7 +584,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  Widget _buildBottomBar(BuildContext context) {
+  Widget _buildBottomBar(BuildContext context, RecipeDetailState state) {
     return Container(
       padding: const EdgeInsets.all(24.0),
       decoration: BoxDecoration(
@@ -600,36 +600,82 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF47B20),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+        child: Row(
+          children: [
+            // Save for Later Button
+            SizedBox(
+              height: 52,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                    color: state.isFavorite ? const Color(0xFFF47B20) : const Color(0xFFEFEBE4),
+                    width: 1.5,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+                onPressed: () {
+                  context.read<RecipeDetailBloc>().add(ToggleFavorite());
+                },
+                child: Row(
+                  children: [
+                    Icon(
+                      state.isFavorite
+                          ? Icons.bookmark_rounded
+                          : Icons.bookmark_border_rounded,
+                      color: state.isFavorite ? const Color(0xFFF47B20) : const Color(0xFF8C8A87),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      state.isFavorite ? 'Saved' : 'Save',
+                      style: GoogleFonts.poppins(
+                        color: state.isFavorite ? const Color(0xFFF47B20) : const Color(0xFF1F1E1C),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              elevation: 0,
             ),
-            onPressed: () {
-              context.read<RecipeDetailBloc>().add(StartCooking());
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.soup_kitchen_rounded, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  'Start Cooking',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
+            const SizedBox(width: 12),
+            // Start Cooking Button
+            Expanded(
+              child: SizedBox(
+                height: 52,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF47B20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  onPressed: () {
+                    context.read<RecipeDetailBloc>().add(StartCooking());
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.soup_kitchen_rounded, color: Colors.white, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Start Cooking',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
