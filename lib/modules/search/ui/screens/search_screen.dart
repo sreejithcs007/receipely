@@ -259,7 +259,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildTrendingList(BuildContext context) {
-    final trending = ['high protein', '30 minute meals', 'one pot meals'];
+    final trending = ['high protein', '30 minute meals', 'dinner'];
     return SizedBox(
       height: 38,
       child: ListView.separated(
