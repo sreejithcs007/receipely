@@ -451,7 +451,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               color: Color(0xFF8C8A87),
                             ),
                             onTap: () {
-                              Navigator.pop(context);
                               RecipeDetailRoute(recipeId: recipe.id).push(context);
                             },
                           ),
@@ -649,7 +648,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               color: Color(0xFF8C8A87),
                             ),
                             onTap: () {
-                              Navigator.pop(context);
                               RecipeDetailRoute(recipeId: recipe.id).push(context);
                             },
                           ),
