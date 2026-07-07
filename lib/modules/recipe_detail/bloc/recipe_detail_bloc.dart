@@ -127,7 +127,10 @@ class RecipeDetailBloc extends Bloc<RecipeDetailEvent, RecipeDetailState> {
     if (user != null) {
       try {
         await _userRepository.markRecipeAsCooked(user.id, state.recipeId);
-      } catch (_) {}
+      } catch (e) {
+        // ignore: avoid_print
+        print('RecipeDetailBloc: Error saving cooked state: $e');
+      }
     }
   }
 }
