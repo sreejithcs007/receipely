@@ -29,7 +29,7 @@ class SearchState extends Equatable {
   final String query;
   final List<String> recentSearches;
   final String? cuisineFilter;
-  final String? dietFilter;
+  final String? difficultyFilter;
   final String? timeFilter;
   final List<RecipeSearchResult> results;
   final List<String> favoriteRecipeIds;
@@ -39,7 +39,7 @@ class SearchState extends Equatable {
     required this.query,
     required this.recentSearches,
     this.cuisineFilter,
-    this.dietFilter,
+    this.difficultyFilter,
     this.timeFilter,
     required this.results,
     required this.favoriteRecipeIds,
@@ -50,7 +50,7 @@ class SearchState extends Equatable {
     String? query,
     List<String>? recentSearches,
     String? Function()? cuisineFilter,
-    String? Function()? dietFilter,
+    String? Function()? difficultyFilter,
     String? Function()? timeFilter,
     List<RecipeSearchResult>? results,
     List<String>? favoriteRecipeIds,
@@ -60,7 +60,7 @@ class SearchState extends Equatable {
       query: query ?? this.query,
       recentSearches: recentSearches ?? this.recentSearches,
       cuisineFilter: cuisineFilter != null ? cuisineFilter() : this.cuisineFilter,
-      dietFilter: dietFilter != null ? dietFilter() : this.dietFilter,
+      difficultyFilter: difficultyFilter != null ? difficultyFilter() : this.difficultyFilter,
       timeFilter: timeFilter != null ? timeFilter() : this.timeFilter,
       results: results ?? this.results,
       favoriteRecipeIds: favoriteRecipeIds ?? this.favoriteRecipeIds,
@@ -73,7 +73,7 @@ class SearchState extends Equatable {
         query,
         recentSearches,
         cuisineFilter,
-        dietFilter,
+        difficultyFilter,
         timeFilter,
         results,
         favoriteRecipeIds,

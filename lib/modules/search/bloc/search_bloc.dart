@@ -72,7 +72,7 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
           : await _recipeRepository.getRecipes(
               query: event.query,
               cuisine: state.cuisineFilter,
-              dietary: state.dietFilter != null ? [state.dietFilter!] : null,
+              difficulty: state.difficultyFilter,
               maxTimeMin: maxTimeMin,
             );
       final results = _mapToSearchResults(recipes);
@@ -89,7 +89,7 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
         searchDurationMs: stopwatch.elapsedMilliseconds,
         filtersApplied: {
           'cuisine': state.cuisineFilter,
-          'diet': state.dietFilter,
+          'difficulty': state.difficultyFilter,
           'time': state.timeFilter,
         },
       );
@@ -138,20 +138,20 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
 
   Future<void> _onSelectFilter(SelectFilter event, Emitter<SearchState> emit) async {
     String? cuisine = state.cuisineFilter;
-    String? diet = state.dietFilter;
+    String? difficulty = state.difficultyFilter;
     String? time = state.timeFilter;
 
     if (event.filterType == 'cuisine') {
       cuisine = event.value;
-    } else if (event.filterType == 'diet') {
-      diet = event.value;
+    } else if (event.filterType == 'difficulty') {
+      difficulty = event.value;
     } else if (event.filterType == 'time') {
       time = event.value;
     }
 
     emit(state.copyWith(
       cuisineFilter: () => cuisine,
-      dietFilter: () => diet,
+      difficultyFilter: () => difficulty,
       timeFilter: () => time,
       isLoading: true,
     ));
@@ -170,7 +170,7 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
           : await _recipeRepository.getRecipes(
               query: state.query,
               cuisine: cuisine,
-              dietary: diet != null ? [diet] : null,
+              difficulty: difficulty,
               maxTimeMin: maxTimeMin,
             );
       final results = _mapToSearchResults(recipes);
@@ -187,7 +187,7 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
         searchDurationMs: stopwatch.elapsedMilliseconds,
         filtersApplied: {
           'cuisine': cuisine,
-          'diet': diet,
+          'difficulty': difficulty,
           'time': time,
         },
       );

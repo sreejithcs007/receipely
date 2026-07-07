@@ -95,7 +95,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                 Text(
                                   state.query.isEmpty &&
                                           state.cuisineFilter == null &&
-                                          state.dietFilter == null &&
+                                          state.difficultyFilter == null &&
                                           state.timeFilter == null
                                       ? 'Popular Recipes'
                                       : 'Search Results (${state.results.length})',
@@ -322,14 +322,14 @@ class _SearchScreenState extends State<SearchScreen> {
         const SizedBox(width: 8),
         _buildFilterChip(
           context,
-          label: state.dietFilter ?? 'Diet',
-          icon: Icons.eco_outlined,
-          isActive: state.dietFilter != null,
+          label: state.difficultyFilter ?? 'Difficulty',
+          icon: Icons.bar_chart_rounded,
+          isActive: state.difficultyFilter != null,
           onTap: () => _showFilterMenu(
             context,
-            filterType: 'diet',
-            options: ['Vegan', 'Vegetarian', 'Low Carb'],
-            selectedValue: state.dietFilter,
+            filterType: 'difficulty',
+            options: ['Easy', 'Medium', 'Hard'],
+            selectedValue: state.difficultyFilter,
           ),
         ),
         const SizedBox(width: 8),
@@ -551,7 +551,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildRecipesGrid(BuildContext context, SearchState state) {
     final isPopularRecipes = state.query.isEmpty &&
         state.cuisineFilter == null &&
-        state.dietFilter == null &&
+        state.difficultyFilter == null &&
         state.timeFilter == null;
     final displayCount = isPopularRecipes
         ? (state.results.length > 4 ? 4 : state.results.length)
