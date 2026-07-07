@@ -53,7 +53,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             const SizedBox(height: 24),
 
                             // ── Stats Card (Excluding Followers) ───────────────────
-                            _buildStatsCard(state),
+                            _buildStatsCard(context, state),
 
                             const SizedBox(height: 32),
 
@@ -193,7 +193,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStatsCard(ProfileState state) {
+  Widget _buildStatsCard(BuildContext context, ProfileState state) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20),
       decoration: BoxDecoration(
@@ -381,78 +381,83 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: const Color(0xFFEFEBE4), width: 1),
                           ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.all(8),
-                            leading: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: SizedBox(
-                                width: 56,
-                                height: 56,
-                                child: recipe.imageUrl.startsWith('http')
-                                    ? CachedNetworkImage(
-                                        imageUrl: recipe.imageUrl,
-                                        fit: BoxFit.cover,
-                                        placeholder: (context, url) => Container(
-                                          color: const Color(0xFFEFEBE4),
-                                        ),
-                                        errorWidget: (context, url, error) => Image.asset(
-                                          AppImages.recipeRamen,
+                          child: Material(
+                            color: Colors.transparent,
+                            clipBehavior: Clip.antiAlias,
+                            borderRadius: BorderRadius.circular(16),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.all(8),
+                              leading: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: SizedBox(
+                                  width: 56,
+                                  height: 56,
+                                  child: recipe.imageUrl.startsWith('http')
+                                      ? CachedNetworkImage(
+                                          imageUrl: recipe.imageUrl,
                                           fit: BoxFit.cover,
-                                        ),
-                                      )
-                                    : Image.asset(
-                                        recipe.imageUrl.isNotEmpty
-                                            ? recipe.imageUrl
-                                            : AppImages.recipeRamen,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => Image.asset(
-                                          AppImages.recipeRamen,
+                                          placeholder: (context, url) => Container(
+                                            color: const Color(0xFFEFEBE4),
+                                          ),
+                                          errorWidget: (context, url, error) => Image.asset(
+                                            AppImages.recipeRamen,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        )
+                                      : Image.asset(
+                                          recipe.imageUrl.isNotEmpty
+                                              ? recipe.imageUrl
+                                              : AppImages.recipeRamen,
                                           fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) => Image.asset(
+                                            AppImages.recipeRamen,
+                                            fit: BoxFit.cover,
+                                          ),
                                         ),
-                                      ),
-                              ),
-                            ),
-                            title: Text(
-                              recipe.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.poppins(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF1F1E1C),
-                              ),
-                            ),
-                            subtitle: Row(
-                              children: [
-                                const Icon(Icons.schedule_rounded, size: 14, color: Color(0xFF8C8A87)),
-                                const SizedBox(width: 4),
-                                Text(
-                                  recipe.cookTime,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    color: const Color(0xFF8C8A87),
-                                  ),
                                 ),
-                                const SizedBox(width: 12),
-                                const Icon(Icons.bolt_rounded, size: 14, color: Color(0xFF8C8A87)),
-                                const SizedBox(width: 2),
-                                Text(
-                                  recipe.calories,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    color: const Color(0xFF8C8A87),
-                                  ),
+                              ),
+                              title: Text(
+                                recipe.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF1F1E1C),
                                 ),
-                              ],
+                              ),
+                              subtitle: Row(
+                                children: [
+                                  const Icon(Icons.schedule_rounded, size: 14, color: Color(0xFF8C8A87)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    recipe.cookTime,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      color: const Color(0xFF8C8A87),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Icon(Icons.bolt_rounded, size: 14, color: Color(0xFF8C8A87)),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    recipe.calories,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      color: const Color(0xFF8C8A87),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              trailing: const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 14,
+                                color: Color(0xFF8C8A87),
+                              ),
+                              onTap: () {
+                                RecipeDetailRoute(recipeId: recipe.id).push(context);
+                              },
                             ),
-                            trailing: const Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              size: 14,
-                              color: Color(0xFF8C8A87),
-                            ),
-                            onTap: () {
-                              RecipeDetailRoute(recipeId: recipe.id).push(context);
-                            },
                           ),
                         );
                       },
@@ -464,7 +469,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         );
       },
-    );
+    ).then((_) {
+      if (context.mounted) {
+        context.read<ProfileBloc>().add(LoadProfilePage());
+      }
+    });
   }
 
   void _showCookedRecipesBottomSheet(BuildContext context) {
@@ -578,78 +587,83 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: const Color(0xFFEFEBE4), width: 1),
                           ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.all(8),
-                            leading: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: SizedBox(
-                                width: 56,
-                                height: 56,
-                                child: recipe.imageUrl.startsWith('http')
-                                    ? CachedNetworkImage(
-                                        imageUrl: recipe.imageUrl,
-                                        fit: BoxFit.cover,
-                                        placeholder: (context, url) => Container(
-                                          color: const Color(0xFFEFEBE4),
-                                        ),
-                                        errorWidget: (context, url, error) => Image.asset(
-                                          AppImages.recipeRamen,
+                          child: Material(
+                            color: Colors.transparent,
+                            clipBehavior: Clip.antiAlias,
+                            borderRadius: BorderRadius.circular(16),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.all(8),
+                              leading: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: SizedBox(
+                                  width: 56,
+                                  height: 56,
+                                  child: recipe.imageUrl.startsWith('http')
+                                      ? CachedNetworkImage(
+                                          imageUrl: recipe.imageUrl,
                                           fit: BoxFit.cover,
-                                        ),
-                                      )
-                                    : Image.asset(
-                                        recipe.imageUrl.isNotEmpty
-                                            ? recipe.imageUrl
-                                            : AppImages.recipeRamen,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => Image.asset(
-                                          AppImages.recipeRamen,
+                                          placeholder: (context, url) => Container(
+                                            color: const Color(0xFFEFEBE4),
+                                          ),
+                                          errorWidget: (context, url, error) => Image.asset(
+                                            AppImages.recipeRamen,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        )
+                                      : Image.asset(
+                                          recipe.imageUrl.isNotEmpty
+                                              ? recipe.imageUrl
+                                              : AppImages.recipeRamen,
                                           fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) => Image.asset(
+                                            AppImages.recipeRamen,
+                                            fit: BoxFit.cover,
+                                          ),
                                         ),
-                                      ),
-                              ),
-                            ),
-                            title: Text(
-                              recipe.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.poppins(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF1F1E1C),
-                              ),
-                            ),
-                            subtitle: Row(
-                              children: [
-                                const Icon(Icons.schedule_rounded, size: 14, color: Color(0xFF8C8A87)),
-                                const SizedBox(width: 4),
-                                Text(
-                                  recipe.cookTime,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    color: const Color(0xFF8C8A87),
-                                  ),
                                 ),
-                                const SizedBox(width: 12),
-                                const Icon(Icons.bolt_rounded, size: 14, color: Color(0xFF8C8A87)),
-                                const SizedBox(width: 2),
-                                Text(
-                                  recipe.calories,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    color: const Color(0xFF8C8A87),
-                                  ),
+                              ),
+                              title: Text(
+                                recipe.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF1F1E1C),
                                 ),
-                              ],
+                              ),
+                              subtitle: Row(
+                                children: [
+                                  const Icon(Icons.schedule_rounded, size: 14, color: Color(0xFF8C8A87)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    recipe.cookTime,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      color: const Color(0xFF8C8A87),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Icon(Icons.bolt_rounded, size: 14, color: Color(0xFF8C8A87)),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    recipe.calories,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      color: const Color(0xFF8C8A87),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              trailing: const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 14,
+                                color: Color(0xFF8C8A87),
+                              ),
+                              onTap: () {
+                                RecipeDetailRoute(recipeId: recipe.id).push(context);
+                              },
                             ),
-                            trailing: const Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              size: 14,
-                              color: Color(0xFF8C8A87),
-                            ),
-                            onTap: () {
-                              RecipeDetailRoute(recipeId: recipe.id).push(context);
-                            },
                           ),
                         );
                       },
@@ -661,7 +675,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         );
       },
-    );
+    ).then((_) {
+      if (context.mounted) {
+        context.read<ProfileBloc>().add(LoadProfilePage());
+      }
+    });
   }
 
   Widget _buildBadge(_AchievementItem ach, {double size = 54.0}) {
