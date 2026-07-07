@@ -49,7 +49,9 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
         favoriteRecipeIds: favoriteRecipeIds,
         isLoading: false,
       ));
-    } catch (_) {
+    } catch (e) {
+      // ignore: avoid_print
+      print('SearchBloc: Error in _onLoadSearchPage: $e');
       emit(state.copyWith(isLoading: false));
     }
   }
@@ -59,10 +61,10 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
     final stopwatch = Stopwatch()..start();
     try {
       int? maxTimeMin;
-      if (state.timeFilter == 'Under 15 min') {
-        maxTimeMin = 15;
-      } else if (state.timeFilter == 'Under 30 min') {
-        maxTimeMin = 30;
+      if (state.timeFilter == 'Under 45 min') {
+        maxTimeMin = 45;
+      } else if (state.timeFilter == 'Under 60 min') {
+        maxTimeMin = 60;
       }
 
       final recipes = (event.query.toLowerCase() == 'trending')
@@ -91,7 +93,9 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
           'time': state.timeFilter,
         },
       );
-    } catch (_) {
+    } catch (e) {
+      // ignore: avoid_print
+      print('SearchBloc: Error in _onSearchQueryChanged: $e');
       emit(state.copyWith(isLoading: false));
     }
   }
@@ -155,10 +159,10 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
     final stopwatch = Stopwatch()..start();
     try {
       int? maxTimeMin;
-      if (time == 'Under 15 min') {
-        maxTimeMin = 15;
-      } else if (time == 'Under 30 min') {
-        maxTimeMin = 30;
+      if (time == 'Under 45 min') {
+        maxTimeMin = 45;
+      } else if (time == 'Under 60 min') {
+        maxTimeMin = 60;
       }
 
       final recipes = (state.query.toLowerCase() == 'trending')
@@ -187,7 +191,9 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
           'time': time,
         },
       );
-    } catch (_) {
+    } catch (e) {
+      // ignore: avoid_print
+      print('SearchBloc: Error in _onSelectFilter: $e');
       emit(state.copyWith(isLoading: false));
     }
   }

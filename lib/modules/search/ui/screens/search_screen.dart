@@ -341,7 +341,7 @@ class _SearchScreenState extends State<SearchScreen> {
           onTap: () => _showFilterMenu(
             context,
             filterType: 'time',
-            options: ['Under 15 min', 'Under 30 min'],
+            options: ['Under 45 min', 'Under 60 min'],
             selectedValue: state.timeFilter,
           ),
         ),
