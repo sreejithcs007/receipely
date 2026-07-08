@@ -556,19 +556,8 @@ class _SearchScreenState extends State<SearchScreen> {
                                   memCacheWidth: 400,
                                   memCacheHeight: 400,
                                   fit: BoxFit.cover,
-                                  placeholder: (context, url) => Container(
-                                    color: const Color(0xFFEFEBE4),
-                                    child: const Center(
-                                      child: SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Color(0xFFF47B20),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+                                  placeholder: (context, url) =>
+                                      const ShimmerImagePlaceholder(),
                                   errorWidget: (context, url, error) => Image.asset(
                                     AppImages.recipeRamen,
                                     fit: BoxFit.cover,

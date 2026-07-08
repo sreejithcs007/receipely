@@ -42,3 +42,12 @@ class PrevStep extends RecipeDetailEvent {}
 class CancelCooking extends RecipeDetailEvent {}
 
 class CompleteCooking extends RecipeDetailEvent {}
+
+class GoToStep extends RecipeDetailEvent {
+  final int step;
+  const GoToStep(this.step);
+
+  @override
+  List<Object?> get props => [step];
+}
+

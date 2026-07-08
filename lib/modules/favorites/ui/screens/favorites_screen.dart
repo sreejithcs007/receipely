@@ -11,6 +11,7 @@ import '../../bloc/favorites_bloc.dart';
 import '../../bloc/favorites_event.dart';
 import '../../bloc/favorites_state.dart';
 
+import '../../../../shared/services/notification_service.dart';
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
 
@@ -42,21 +43,40 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
                     // ── Scrollable Content Area ─────────────────────────────
                     Expanded(
-                      child: state.isLoading
-                          ? _buildShimmerGrid()
-                          : SingleChildScrollView(
-                              physics: const BouncingScrollPhysics(),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (state.favorites.isEmpty)
-                                    _buildEmptyState('No favorites yet', 'Bookmark recipes to see them here.')
-                                  else
-                                    _buildRecipesGrid(context, state),
-                                  const SizedBox(height: 24),
-                                ],
+                      child: RefreshIndicator(
+                        onRefresh: () async {
+                          context.read<FavoritesBloc>().add(LoadFavoritesPage());
+                          await Future.delayed(const Duration(milliseconds: 800));
+                          if (context.mounted) {
+                            OverlayNotification.show(
+                              context,
+                              message: 'Favorites list refreshed!',
+                              type: NotificationType.success,
+                            );
+                          }
+                        },
+                        color: const Color(0xFFF47B20),
+                        backgroundColor: Colors.white,
+                        strokeWidth: 2.5,
+                        displacement: 40,
+                        child: state.isLoading
+                            ? _buildShimmerGrid()
+                            : SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(
+                                  parent: BouncingScrollPhysics(),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (state.favorites.isEmpty)
+                                      _buildEmptyState('No favorites yet', 'Bookmark recipes to see them here.')
+                                    else
+                                      _buildRecipesGrid(context, state),
+                                    const SizedBox(height: 24),
+                                  ],
+                                ),
                               ),
-                            ),
+                      ),
                     ),
                   ],
                 ),
@@ -307,19 +327,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                   memCacheWidth: 400,
                                   memCacheHeight: 400,
                                   fit: BoxFit.cover,
-                                  placeholder: (context, url) => Container(
-                                    color: const Color(0xFFEFEBE4),
-                                    child: const Center(
-                                      child: SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Color(0xFFF47B20),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+                                  placeholder: (context, url) =>
+                                      const ShimmerImagePlaceholder(),
                                   errorWidget: (context, url, error) => Image.asset(
                                     AppImages.recipeRamen,
                                     fit: BoxFit.cover,

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../../../shared/widgets/animations/confetti_celebration.dart';
 import '../../../../shared/widgets/loader/shimmer_card.dart';
 import '../../../../shared/core/constants/asset_constants.dart';
 import '../../../../shared/di/service_locator.dart';
@@ -13,6 +16,7 @@ import '../../../../shared/widgets/buttons/animated_favorite_button.dart';
 import '../../../../shared/widgets/buttons/animated_press_button.dart';
 import '../../../../shared/widgets/tabs/animated_tab_bar.dart';
 import '../../../../shared/widgets/tiles/animated_ingredient_tile.dart';
+import '../../../../shared/services/notification_service.dart';
 import '../../bloc/recipe_detail_bloc.dart';
 import '../../bloc/recipe_detail_event.dart';
 import '../../bloc/recipe_detail_state.dart';
@@ -31,6 +35,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   /// True once the scroll position passes the image height threshold.
   bool _showFloatingTitle = false;
+
+  PageController? _cookingPageController;
+  bool _showConfetti = false;
+  bool? _lastFavoriteState;
 
   // Image height used for SliverAppBar – slightly over-expanded for parallax
   static const double _kHeaderExpandedHeight = 340.0;
@@ -88,16 +96,36 @@ $steps
 ✨ Found on Recipely — Your Premium Recipe App
     '''.trim();
 
-    Share.share(
-      shareText,
-      subject: '${state.title} — Recipe from Recipely',
+    if (kIsWeb) {
+      _copyToClipboard(context, shareText);
+    } else {
+      try {
+        Share.share(
+          shareText,
+          subject: '${state.title} — Recipe from Recipely',
+        );
+      } catch (e) {
+        _copyToClipboard(context, shareText);
+      }
+    }
+  }
+
+  void _copyToClipboard(BuildContext context, String text) {
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Recipe details copied to clipboard!'),
+        duration: Duration(seconds: 2),
+      ),
     );
   }
+
 
   @override
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _cookingPageController?.dispose();
     super.dispose();
   }
 
@@ -108,8 +136,48 @@ $steps
         getIt<RecipeRepository>(),
         getIt<UserRepository>(),
       )..add(LoadRecipeDetail(widget.recipeId)),
-      child: BlocBuilder<RecipeDetailBloc, RecipeDetailState>(
-        builder: (context, state) {
+      child: BlocListener<RecipeDetailBloc, RecipeDetailState>(
+        listenWhen: (previous, current) =>
+            previous.isCooking != current.isCooking ||
+            previous.currentCookingStep != current.currentCookingStep ||
+            previous.isFavorite != current.isFavorite,
+        listener: (context, state) {
+          if (!state.isCooking) {
+            _cookingPageController?.dispose();
+            _cookingPageController = null;
+          } else {
+            if (_cookingPageController == null) {
+              _cookingPageController =
+                  PageController(initialPage: state.currentCookingStep);
+            } else if (_cookingPageController!.hasClients &&
+                _cookingPageController!.page?.round() !=
+                    state.currentCookingStep) {
+              _cookingPageController!.animateToPage(
+                state.currentCookingStep,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOutCubic,
+              );
+            }
+          }
+
+          if (state.title != 'Loading...') {
+            if (_lastFavoriteState != null &&
+                _lastFavoriteState != state.isFavorite) {
+              OverlayNotification.show(
+                context,
+                message: state.isFavorite
+                    ? 'Added "${state.title}" to your favorites! ❤️'
+                    : 'Removed "${state.title}" from favorites 💔',
+                type: state.isFavorite
+                    ? NotificationType.success
+                    : NotificationType.warning,
+              );
+            }
+            _lastFavoriteState = state.isFavorite;
+          }
+        },
+        child: BlocBuilder<RecipeDetailBloc, RecipeDetailState>(
+          builder: (context, state) {
           if (state.title == 'Loading...') {
             return Scaffold(
               backgroundColor: const Color(0xFFFAF7F2),
@@ -240,13 +308,24 @@ $steps
                 // ── Full-screen Cooking Guide Overlay ────────────────────
                 if (state.isCooking)
                   _buildCookingOverlay(context, state),
+
+                // ── Confetti Celebration ─────────────────────────────────
+                if (_showConfetti)
+                  Positioned.fill(
+                    child: ConfettiCelebration(
+                      onAnimationFinished: () {
+                        setState(() => _showConfetti = false);
+                      },
+                    ),
+                  ),
               ],
             ),
           );
         },
       ),
-    );
-  }
+    ),
+  );
+}
 
   /// Transparent AppBar that shows a frosted title after scrolling past image.
   PreferredSizeWidget _buildTransparentAppBar(
@@ -834,40 +913,51 @@ $steps
 
               // Step Detail Card
               Expanded(
-                child: Center(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Giant illustration icon
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Color(0xFFFFF2D9),
-                          ),
-                          child: const Icon(
-                            Icons.restaurant_rounded,
-                            color: Color(0xFFF47B20),
-                            size: 40,
-                          ),
+                child: PageView.builder(
+                  controller: _cookingPageController,
+                  itemCount: totalSteps,
+                  onPageChanged: (index) {
+                    context.read<RecipeDetailBloc>().add(GoToStep(index));
+                    HapticService.selection();
+                  },
+                  itemBuilder: (context, index) {
+                    return Center(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Giant illustration icon
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Color(0xFFFFF2D9),
+                              ),
+                              child: const Icon(
+                                Icons.restaurant_rounded,
+                                color: Color(0xFFF47B20),
+                                size: 40,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            // Instruction Text
+                            Text(
+                              state.steps[index],
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF1F1E1C),
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 24),
-                        // Instruction Text
-                        Text(
-                          state.steps[stepIndex],
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF1F1E1C),
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                  },
                 ),
               ),
 
@@ -919,6 +1009,7 @@ $steps
                           if (isLastStep) {
                             // Show beautiful success dialog and complete cooking state
                             context.read<RecipeDetailBloc>().add(CompleteCooking());
+                            setState(() => _showConfetti = true);
                             _showSuccessDialog(context, state.title);
                           } else {
                             context.read<RecipeDetailBloc>().add(NextStep());
@@ -1022,70 +1113,6 @@ $steps
   }
 
   Widget _buildDetailShimmer(BuildContext context) {
-    return SingleChildScrollView(
-      physics: const NeverScrollableScrollPhysics(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Image Placeholder
-          const CustomShimmer(
-            height: 340,
-            width: double.infinity,
-            borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
-          ),
-          
-          // Recipe Info Padding
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title Placeholder
-                CustomShimmer(width: 250, height: 28, borderRadius: BorderRadius.circular(8)),
-                const SizedBox(height: 12),
-                
-                // Description Placeholders
-                CustomShimmer(width: double.infinity, height: 16, borderRadius: BorderRadius.circular(4)),
-                const SizedBox(height: 8),
-                CustomShimmer(width: double.infinity, height: 16, borderRadius: BorderRadius.circular(4)),
-                const SizedBox(height: 8),
-                CustomShimmer(width: 180, height: 16, borderRadius: BorderRadius.circular(4)),
-                const SizedBox(height: 24),
-                
-                // Stats Row Placeholder
-                CustomShimmer(
-                  height: 52,
-                  width: double.infinity,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                const SizedBox(height: 28),
-                
-                // Tab Bar Placeholder
-                CustomShimmer(
-                  height: 48,
-                  width: double.infinity,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                const SizedBox(height: 24),
-                
-                // Ingredients/Steps items placeholders
-                Column(
-                  children: List.generate(4, (index) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12.0),
-                    child: Row(
-                      children: [
-                        const CustomShimmer(width: 24, height: 24, shape: BoxShape.circle),
-                        const SizedBox(width: 16),
-                        CustomShimmer(width: 160, height: 16, borderRadius: BorderRadius.circular(4)),
-                      ],
-                    ),
-                  )),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return const DetailShimmer();
   }
 }

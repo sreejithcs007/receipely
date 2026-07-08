@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,10 +13,10 @@ import '../../../../shared/data/repositories/recipe_repository.dart';
 import '../../../../shared/data/repositories/user_repository.dart';
 import '../../../../shared/data/models/user_profile_model.dart';
 import '../../../../shared/data/models/recipe_model.dart';
+import '../../../../shared/services/notification_service.dart';
 import '../../bloc/home_bloc.dart';
 import '../../bloc/home_event.dart';
 import '../../bloc/home_state.dart';
-
 
 
 class HomeScreen extends StatefulWidget {
@@ -25,8 +26,42 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   int _currentFeaturedPageIndex = 0;
+  late final PageController _featuredPageController;
+  Timer? _autoSlideTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _featuredPageController =
+        PageController(viewportFraction: 0.94, initialPage: 0);
+  }
+
+  /// Starts the 3.5-second auto-slide timer.
+  /// Call this once the featured list is available (non-empty).
+  void _startAutoSlide(int itemCount) {
+    _autoSlideTimer?.cancel();
+    if (itemCount <= 1) return;
+    _autoSlideTimer =
+        Timer.periodic(const Duration(milliseconds: 3500), (_) {
+      if (!mounted) return;
+      final next = (_currentFeaturedPageIndex + 1) % itemCount;
+      _featuredPageController.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOutCubic,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _autoSlideTimer?.cancel();
+    _featuredPageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -137,9 +172,28 @@ class _HomeScreenState extends State<HomeScreen> {
             return Scaffold(
               backgroundColor: const Color(0xFFFAF7F2), // Premium Canvas background
               body: SafeArea(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    context.read<HomeBloc>().add(LoadHomeData());
+                    // Wait for the bloc to emit a new loaded state
+                    await Future.delayed(const Duration(milliseconds: 800));
+                    if (context.mounted) {
+                      OverlayNotification.show(
+                        context,
+                        message: 'Home feed updated successfully!',
+                        type: NotificationType.success,
+                      );
+                    }
+                  },
+                  color: const Color(0xFFF47B20),
+                  backgroundColor: Colors.white,
+                  strokeWidth: 2.5,
+                  displacement: 40,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -168,12 +222,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 32),
 
                       // ── Categories Horizontal List ──────────────────────────────
-                      _buildCategoriesSection(context, categories),
+                       _buildCategoriesSection(context, categories),
                     ],
                   ),
                 ),
               ),
-            );
+            ),
+          );
+
           }
           return const SizedBox.shrink();
         },
@@ -407,9 +463,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   future: getIt<RecipeRepository>().getRecipes(category: item.label),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFFF47B20),
+                      return GridView.builder(
+                        padding: const EdgeInsets.all(16),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 0.78,
+                        ),
+                        itemCount: 4,
+                        itemBuilder: (_, __) => const ShimmerCard(
+                          height: 220,
+                          width: double.infinity,
                         ),
                       );
                     }
@@ -605,6 +671,208 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Bottom sheet: all trending recipes in a 2-column grid
+  void _showAllTrendingBottomSheet(
+      BuildContext context, List<RecipeItem> allItems) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (dialogContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.85,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (_, scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFFFAF7F2),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(28),
+                  topRight: Radius.circular(28),
+                ),
+              ),
+              padding:
+                  const EdgeInsets.only(left: 24, right: 24, top: 20, bottom: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Drag handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFEBE4),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Trending Recipes',
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1F1E1C),
+                        ),
+                      ),
+                      Text(
+                        '${allItems.length} recipes',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: const Color(0xFF8C8A87),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Expanded(
+                    child: GridView.builder(
+                      controller: scrollController,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 0.72,
+                      ),
+                      itemCount: allItems.length,
+                      itemBuilder: (ctx, index) {
+                        final item = allItems[index];
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.pop(dialogContext);
+                            RecipeDetailRoute(recipeId: item.id).push(context);
+                          },
+                          child: _buildTrendingCard(ctx, item),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Bottom sheet: all featured recipes in a 2-column grid (same style as trending)
+  void _showAllFeaturedBottomSheet(
+    BuildContext context,
+    List<RecipeModel> allFeatured,
+    List<String> favoriteRecipeIds,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (dialogContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.85,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (_, scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFFFAF7F2),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(28),
+                  topRight: Radius.circular(28),
+                ),
+              ),
+              padding: const EdgeInsets.only(
+                  left: 24, right: 24, top: 20, bottom: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Drag handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFEBE4),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Featured Recipes',
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1F1E1C),
+                        ),
+                      ),
+                      Text(
+                        '${allFeatured.length} recipes',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: const Color(0xFF8C8A87),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // 2-column grid — same UI as Trending View All
+                  Expanded(
+                    child: GridView.builder(
+                      controller: scrollController,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 0.72,
+                      ),
+                      itemCount: allFeatured.length,
+                      itemBuilder: (ctx, index) {
+                        final r = allFeatured[index];
+                        final isFav = favoriteRecipeIds.contains(r.id);
+                        // Map RecipeModel -> RecipeItem for the trending card
+                        final item = RecipeItem(
+                          id: r.id,
+                          title: r.title,
+                          imageUrl: r.imageUrl,
+                          rating: r.rating.toStringAsFixed(1),
+                          reviews: r.reviews.toString(),
+                          cookTime: r.cookTime,
+                          calories: r.calories,
+                          isFavorited: isFav,
+                        );
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.pop(dialogContext);
+                            RecipeDetailRoute(recipeId: r.id).push(context);
+                          },
+                          child: _buildTrendingCard(ctx, item),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   String _resolveCategoryImageUrl(String url) {
     if (url.startsWith('http')) return url;
     if (url.startsWith('assets/')) return url;
@@ -653,19 +921,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         memCacheWidth: 300,
                         memCacheHeight: 300,
                         fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: const Color(0xFFEFEBE4),
-                          child: const Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Color(0xFFF47B20),
-                              ),
-                            ),
-                          ),
-                        ),
+                        placeholder: (context, url) =>
+                            const ShimmerImagePlaceholder(),
                         errorWidget: (context, url, error) => Container(
                           color: const Color(0xFFFFF2D9),
                           child: const Icon(Icons.restaurant_rounded, color: Color(0xFFF47B20)),
@@ -739,39 +996,92 @@ class _HomeScreenState extends State<HomeScreen> {
       return const SizedBox.shrink();
     }
 
+    const kMaxVisible = 4;
+    final displayedRecipes = featuredRecipes.take(kMaxVisible).toList();
+
+    // Start auto-slide once data is available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_autoSlideTimer == null || !_autoSlideTimer!.isActive) {
+        _startAutoSlide(displayedRecipes.length);
+      }
+    });
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── Section header with View All ────────────────────────────
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Featured',
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF1F1E1C),
+              ),
+            ),
+            if (featuredRecipes.length > kMaxVisible)
+              GestureDetector(
+                onTap: () => _showAllFeaturedBottomSheet(
+                    context, featuredRecipes, favoriteRecipeIds),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'View all',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFFF47B20),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: Color(0xFFF47B20),
+                      size: 16,
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // ── Carousel PageView (max 4 items, auto-slides) ───────────────
         SizedBox(
           height: 320,
           child: PageView.builder(
-            controller: PageController(viewportFraction: 0.94),
-            itemCount: featuredRecipes.length,
+            controller: _featuredPageController,
+            itemCount: displayedRecipes.length,
             onPageChanged: (index) {
-              setState(() {
-                _currentFeaturedPageIndex = index;
-              });
+              setState(() => _currentFeaturedPageIndex = index);
             },
             physics: const BouncingScrollPhysics(),
             itemBuilder: (context, index) {
-              final recipe = featuredRecipes[index];
+              final recipe = displayedRecipes[index];
               final isFavorited = favoriteRecipeIds.contains(recipe.id);
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                child: _buildFeaturedCard(
-                  context,
-                  recipe,
-                  isFavorited: isFavorited,
+                child: GestureDetector(
+                  onTap: () =>
+                      RecipeDetailRoute(recipeId: recipe.id).push(context),
+                  child: _buildFeaturedCard(
+                    context,
+                    recipe,
+                    isFavorited: isFavorited,
+                  ),
                 ),
               );
             },
           ),
         ),
-        if (featuredRecipes.length > 1) ...[
+        if (displayedRecipes.length > 1) ...[
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(
-              featuredRecipes.length,
+              displayedRecipes.length,
               (index) => AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
                 margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -823,14 +1133,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       memCacheWidth: 800,
                       memCacheHeight: 800,
                       fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: const Color(0xFFEFEBE4),
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            color: Color(0xFFF47B20),
-                          ),
-                        ),
-                      ),
+                      placeholder: (context, url) =>
+                          const ShimmerImagePlaceholder(),
                       errorWidget: (context, url, error) => Image.asset(
                         AppImages.heroBanner,
                         fit: BoxFit.cover,
@@ -1039,6 +1343,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
   Widget _buildTrendingSection(BuildContext context, List<RecipeItem> trendingRecipes) {
+    const kMaxVisible = 5;
+    final displayedItems = trendingRecipes.take(kMaxVisible).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1054,7 +1361,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             GestureDetector(
-              onTap: () => const SearchRoute(q: 'trending').go(context),
+              onTap: () => _showAllTrendingBottomSheet(context, trendingRecipes),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1083,10 +1390,10 @@ class _HomeScreenState extends State<HomeScreen> {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
-            itemCount: trendingRecipes.length,
+            itemCount: displayedItems.length,
             separatorBuilder: (_, __) => const SizedBox(width: 16),
             itemBuilder: (context, index) {
-              final item = trendingRecipes[index];
+              final item = displayedItems[index];
               return GestureDetector(
                 onTap: () => RecipeDetailRoute(recipeId: item.id).push(context),
                 child: _buildTrendingCard(context, item),
@@ -1132,19 +1439,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             memCacheWidth: 400,
                             memCacheHeight: 400,
                             fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
-                              color: const Color(0xFFEFEBE4),
-                              child: const Center(
-                                child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Color(0xFFF47B20),
-                                  ),
-                                ),
-                              ),
-                            ),
+                            placeholder: (context, url) =>
+                                const ShimmerImagePlaceholder(),
                             errorWidget: (context, url, error) => Image.asset(
                               AppImages.recipeRamen,
                               fit: BoxFit.cover,

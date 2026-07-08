@@ -36,6 +36,7 @@ class RecipeDetailBloc extends Bloc<RecipeDetailEvent, RecipeDetailState> {
     on<PrevStep>(_onPrevStep);
     on<CancelCooking>(_onCancelCooking);
     on<CompleteCooking>(_onCompleteCooking);
+    on<GoToStep>(_onGoToStep);
   }
 
   Future<void> _onLoadRecipeDetail(LoadRecipeDetail event, Emitter<RecipeDetailState> emit) async {
@@ -133,4 +134,12 @@ class RecipeDetailBloc extends Bloc<RecipeDetailEvent, RecipeDetailState> {
       }
     }
   }
+
+  void _onGoToStep(GoToStep event, Emitter<RecipeDetailState> emit) {
+    if (event.step >= 0 && event.step < state.steps.length) {
+      emit(state.copyWith(currentCookingStep: event.step));
+    }
+  }
 }
+
+
