@@ -674,6 +674,7 @@ class _HomeScreenState extends State<HomeScreen>
   /// Bottom sheet: all trending recipes in a 2-column grid
   void _showAllTrendingBottomSheet(
       BuildContext context, List<RecipeItem> allItems) {
+    final homeBloc = BlocProvider.of<HomeBloc>(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -686,7 +687,8 @@ class _HomeScreenState extends State<HomeScreen>
           expand: false,
           builder: (_, scrollController) {
             return BlocBuilder<HomeBloc, HomeState>(
-              builder: (context, homeState) {
+              bloc: homeBloc,
+              builder: (sheetContext, homeState) {
                 List<RecipeItem> currentItems = allItems;
                 if (homeState is HomeLoaded) {
                   currentItems = homeState.trendingRecipes
@@ -790,6 +792,7 @@ class _HomeScreenState extends State<HomeScreen>
     List<RecipeModel> allFeatured,
     List<String> favoriteRecipeIds,
   ) {
+    final homeBloc = BlocProvider.of<HomeBloc>(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -802,7 +805,8 @@ class _HomeScreenState extends State<HomeScreen>
           expand: false,
           builder: (_, scrollController) {
             return BlocBuilder<HomeBloc, HomeState>(
-              builder: (context, homeState) {
+              bloc: homeBloc,
+              builder: (sheetContext, homeState) {
                 List<RecipeModel> currentFeatured = allFeatured;
                 List<String> currentFavoriteIds = favoriteRecipeIds;
                 if (homeState is HomeLoaded) {
