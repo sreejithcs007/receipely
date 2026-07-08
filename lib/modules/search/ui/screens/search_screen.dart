@@ -83,13 +83,9 @@ class _SearchScreenState extends State<SearchScreen> {
                                   const SizedBox(height: 24),
                                 ],
 
-                                // Trending List
-                                _buildTrendingList(context),
-                                const SizedBox(height: 24),
-
-                                // Filter Row Dropdowns
-                                _buildFiltersRow(context, state),
-                                const SizedBox(height: 24),
+                                 // Filter Row Dropdowns
+                                 _buildFiltersRow(context, state),
+                                 const SizedBox(height: 24),
 
                                 // Grid Section Header
                                 Text(
@@ -251,52 +247,6 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                 ),
               ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildTrendingList(BuildContext context) {
-    final trending = ['high protein', '30 minute meals', 'dinner'];
-    return SizedBox(
-      height: 38,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: trending.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final query = trending[index];
-          return GestureDetector(
-            onTap: () {
-              _searchController.text = query;
-              context.read<SearchBloc>().add(SearchQueryChanged(query));
-              context.read<SearchBloc>().add(AddRecentSearch(query));
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF2D9), // Light warm yellow/peach
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFFFE0A3), width: 1.0),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.trending_up_rounded, color: Color(0xFFF47B20), size: 14),
-                  const SizedBox(width: 6),
-                  Text(
-                    query,
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFFF47B20),
-                    ),
-                  ),
-                ],
-              ),
             ),
           );
         },
