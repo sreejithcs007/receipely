@@ -7,6 +7,10 @@ import '../../../../shared/core/constants/asset_constants.dart';
 import '../../../../shared/di/service_locator.dart';
 import '../../../../shared/data/repositories/recipe_repository.dart';
 import '../../../../shared/data/repositories/user_repository.dart';
+import '../../../../shared/widgets/buttons/animated_favorite_button.dart';
+import '../../../../shared/widgets/buttons/animated_press_button.dart';
+import '../../../../shared/widgets/tabs/animated_tab_bar.dart';
+import '../../../../shared/widgets/tiles/animated_ingredient_tile.dart';
 import '../../bloc/recipe_detail_bloc.dart';
 import '../../bloc/recipe_detail_event.dart';
 import '../../bloc/recipe_detail_state.dart';
@@ -20,6 +24,43 @@ class RecipeDetailScreen extends StatefulWidget {
 }
 
 class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
+  // Scroll controller drives the bottom CTA animation and app bar opacity
+  final ScrollController _scrollController = ScrollController();
+
+  /// True once the scroll position passes the image height threshold.
+  bool _showFloatingTitle = false;
+
+  // Image height used for SliverAppBar – slightly over-expanded for parallax
+  static const double _kHeaderExpandedHeight = 340.0;
+  // When scroll reaches this offset the floating title fades in
+  static const double _kTitleFadeThreshold = 260.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final offset = _scrollController.offset;
+
+    // Floating title: fade in after the image scrolls away
+    final shouldShowTitle = offset > _kTitleFadeThreshold;
+    if (shouldShowTitle != _showFloatingTitle) {
+      setState(() => _showFloatingTitle = shouldShowTitle);
+    }
+
+    // Bottom CTA: always visible once loaded
+    // (will drive a slide-in transition from hidden on first load)
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -64,76 +105,99 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           }
 
           return Scaffold(
-            backgroundColor: const Color(0xFFFAF7F2), // Canvas
+            backgroundColor: const Color(0xFFFAF7F2),
+            // ── Floating transparent AppBar (title appears on scroll) ──────
+            extendBodyBehindAppBar: true,
+            appBar: _buildTransparentAppBar(context, state),
             body: Stack(
               children: [
-                // ── Main Detail Scroll View ──────────────────────────────────
-                Column(
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
+                // ── Main Scroll View with Parallax Header ────────────────
+                CustomScrollView(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    // Parallax image header
+                    _buildSliverHeader(context, state),
+
+                    // All content as a single SliverToBoxAdapter
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 0.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Header Image with Back/Fav buttons
-                            _buildHeaderImage(context, state),
-
-                            // Recipe Info
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Title
-                                  Text(
-                                    state.title,
-                                    style: GoogleFonts.playfairDisplay(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.w700,
-                                      color: const Color(0xFF1F1E1C),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-
-                                  // Description
-                                  Text(
-                                    state.description,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 14,
-                                      color: const Color(0xFF8C8A87),
-                                      fontWeight: FontWeight.w400,
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-
-                                  // Stats Row
-                                  _buildStatsRow(state),
-                                  const SizedBox(height: 28),
-
-                                  // Custom Tabs (Ingredients / Steps)
-                                  _buildCustomTabBar(context, state),
-                                  const SizedBox(height: 20),
-
-                                  // Tab Content View
-                                  state.selectedTabIndex == 0
-                                      ? _buildIngredientsTab(context, state)
-                                      : _buildStepsTab(state),
-                                ],
+                            // Title
+                            Text(
+                              state.title,
+                              style: GoogleFonts.playfairDisplay(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF1F1E1C),
                               ),
                             ),
+                            const SizedBox(height: 8),
+
+                            // Description
+                            Text(
+                              state.description,
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: const Color(0xFF8C8A87),
+                                fontWeight: FontWeight.w400,
+                                height: 1.4,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Stats Row
+                            _buildStatsRow(state),
+                            const SizedBox(height: 28),
+
+                            // Animated Tab Bar
+                            _buildCustomTabBar(context, state),
+                            const SizedBox(height: 20),
+
+                            // Tab Content
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 250),
+                              switchInCurve: Curves.easeOutCubic,
+                              switchOutCurve: Curves.easeInCubic,
+                              transitionBuilder: (child, anim) => FadeTransition(
+                                opacity: anim,
+                                child: SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: const Offset(0, 0.03),
+                                    end: Offset.zero,
+                                  ).animate(anim),
+                                  child: child,
+                                ),
+                              ),
+                              child: KeyedSubtree(
+                                key: ValueKey(state.selectedTabIndex),
+                                child: state.selectedTabIndex == 0
+                                    ? _buildIngredientsTab(context, state)
+                                    : _buildStepsTab(state),
+                              ),
+                            ),
+
+                            // Bottom padding so content clears the sticky bar
+                            const SizedBox(height: 120),
                           ],
                         ),
                       ),
                     ),
-
-                    // Sticky Bottom CTA Action Bar
-                    _buildBottomBar(context, state),
                   ],
                 ),
 
-                // ── Full-screen Cooking Guide Overlay ─────────────────────────
+                // ── Scroll-driven Sticky CTA Bottom Bar ──────────────────
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: _buildBottomBar(context, state),
+                ),
+
+                // ── Full-screen Cooking Guide Overlay ────────────────────
                 if (state.isCooking)
                   _buildCookingOverlay(context, state),
               ],
@@ -144,76 +208,47 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 
-  Widget _buildHeaderImage(BuildContext context, RecipeDetailState state) {
-    return SizedBox(
-      height: 340,
-      width: double.infinity,
-      child: Stack(
-        children: [
-          // Curved Image
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
-              child: state.imageUrl.startsWith('http')
-                  ? CachedNetworkImage(
-                      imageUrl: state.imageUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: const Color(0xFFEFEBE4),
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            color: Color(0xFFF47B20),
-                          ),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => Image.asset(
-                        AppImages.recipeRamen,
-                        fit: BoxFit.cover,
-                      ),
-                    )
-                  : Image.asset(
-                      state.imageUrl.isNotEmpty ? state.imageUrl : AppImages.recipeRamen,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Image.asset(
-                        AppImages.recipeRamen,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-            ),
-          ),
-          // Dark Top Gradient Overlay for back buttons contrast
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.3),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // Circle Floating Actions
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 12,
-            left: 20,
-            right: 20,
+  /// Transparent AppBar that shows a frosted title after scrolling past image.
+  PreferredSizeWidget _buildTransparentAppBar(
+      BuildContext context, RecipeDetailState state) {
+    return AppBar(
+      backgroundColor: _showFloatingTitle
+          ? Colors.white.withValues(alpha: 0.95)
+          : Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      automaticallyImplyLeading: false,
+      flexibleSpace: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        color: _showFloatingTitle
+            ? Colors.white.withValues(alpha: 0.95)
+            : Colors.transparent,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // Back Button
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
                     width: 40,
                     height: 40,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white,
+                      color: _showFloatingTitle
+                          ? const Color(0xFFF5F3EE)
+                          : Colors.white,
+                      boxShadow: _showFloatingTitle
+                          ? []
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                     ),
                     child: const Icon(
                       Icons.chevron_left_rounded,
@@ -222,41 +257,69 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     ),
                   ),
                 ),
-                // Right buttons (Bookmark & Share)
+                const SizedBox(width: 12),
+
+                // Animated floating title
+                Expanded(
+                  child: AnimatedOpacity(
+                    opacity: _showFloatingTitle ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Text(
+                      state.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF1F1E1C),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Right action buttons
                 Row(
                   children: [
                     // Bookmark
-                    GestureDetector(
-                      onTap: () {
-                        context.read<RecipeDetailBloc>().add(ToggleFavorite());
-                      },
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                        ),
-                        child: Icon(
-                          state.isFavorite ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                          color: state.isFavorite ? const Color(0xFFF47B20) : const Color(0xFF1F1E1C),
-                          size: 22,
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _showFloatingTitle
+                            ? const Color(0xFFF5F3EE)
+                            : Colors.white,
+                      ),
+                      child: Center(
+                        child: AnimatedFavoriteButton(
+                          isFavorite: state.isFavorite,
+                          useBookmarkIcon: true,
+                          size: 20,
+                          onToggle: () {
+                            context.read<RecipeDetailBloc>().add(ToggleFavorite());
+                          },
                         ),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     // Share
-                    Container(
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
                       width: 40,
                       height: 40,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white,
+                        color: _showFloatingTitle
+                            ? const Color(0xFFF5F3EE)
+                            : Colors.white,
                       ),
-                      child: const Icon(
-                        Icons.share_outlined,
-                        color: Color(0xFF1F1E1C),
-                        size: 20,
+                      child: const Center(
+                        child: Icon(
+                          Icons.share_outlined,
+                          color: Color(0xFF1F1E1C),
+                          size: 20,
+                        ),
                       ),
                     ),
                   ],
@@ -264,10 +327,112 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               ],
             ),
           ),
+        ),
+      ),
+      toolbarHeight: MediaQuery.of(context).padding.top + 64,
+    );
+  }
+
+  /// SliverAppBar with pinned back/actions and parallax stretch image.
+  Widget _buildSliverHeader(BuildContext context, RecipeDetailState state) {
+    return SliverAppBar(
+      expandedHeight: _kHeaderExpandedHeight,
+      pinned: false,
+      floating: false,
+      stretch: true,
+      stretchTriggerOffset: 80,
+      automaticallyImplyLeading: false,
+      backgroundColor: Colors.transparent,
+      flexibleSpace: FlexibleSpaceBar(
+        stretchModes: const [
+          StretchMode.zoomBackground,
+          StretchMode.blurBackground,
         ],
+        background: ClipRRect(
+          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // ── Parallax Image ────────────────────────────────────────────
+              state.imageUrl.startsWith('http')
+                  ? Hero(
+                      tag: state.imageUrl,
+                      flightShuttleBuilder: (_, anim, __, ___, ____) => Material(
+                        color: Colors.transparent,
+                        child: ClipRRect(
+                          borderRadius:
+                              const BorderRadius.vertical(bottom: Radius.circular(32)),
+                          child: CachedNetworkImage(
+                            imageUrl: state.imageUrl,
+                            memCacheWidth: 1000,
+                            memCacheHeight: 1000,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      child: CachedNetworkImage(
+                        imageUrl: state.imageUrl,
+                        memCacheWidth: 1000,
+                        memCacheHeight: 1000,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: const Color(0xFFEFEBE4),
+                        ),
+                        errorWidget: (context, url, error) => Image.asset(
+                          AppImages.recipeRamen,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    )
+                  : Image.asset(
+                      state.imageUrl.isNotEmpty
+                          ? state.imageUrl
+                          : AppImages.recipeRamen,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Image.asset(
+                        AppImages.recipeRamen,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+
+              // ── Gradient overlay top (for status bar readability) ─────────
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: const Alignment(0, 0.35),
+                      colors: [
+                        Colors.black.withValues(alpha: 0.35),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // ── Gradient overlay bottom (vanishing into canvas color) ─────
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: const Alignment(0, 0.4),
+                      colors: [
+                        const Color(0xFFFAF7F2).withValues(alpha: 0.5),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
+
 
   Widget _buildStatsRow(RecipeDetailState state) {
     return Container(
@@ -341,85 +506,12 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   }
 
   Widget _buildCustomTabBar(BuildContext context, RecipeDetailState state) {
-    return Container(
-      height: 48,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F3EE),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          // Ingredients Tab
-          Expanded(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {
-                context.read<RecipeDetailBloc>().add(const ChangeTab(0));
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: state.selectedTabIndex == 0 ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: state.selectedTabIndex == 0
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Center(
-                  child: Text(
-                    'Ingredients',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: state.selectedTabIndex == 0 ? FontWeight.w600 : FontWeight.w500,
-                      color: state.selectedTabIndex == 0 ? const Color(0xFF1F1E1C) : const Color(0xFF8C8A87),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          // Steps Tab
-          Expanded(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {
-                context.read<RecipeDetailBloc>().add(const ChangeTab(1));
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: state.selectedTabIndex == 1 ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: state.selectedTabIndex == 1
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Center(
-                  child: Text(
-                    'Steps',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: state.selectedTabIndex == 1 ? FontWeight.w600 : FontWeight.w500,
-                      color: state.selectedTabIndex == 1 ? const Color(0xFF1F1E1C) : const Color(0xFF8C8A87),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    return AnimatedTabBar(
+      selectedIndex: state.selectedTabIndex,
+      labels: const ['Ingredients', 'Steps'],
+      onTabChanged: (index) {
+        context.read<RecipeDetailBloc>().add(ChangeTab(index));
+      },
     );
   }
 
@@ -449,70 +541,26 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           ],
         ),
         const SizedBox(height: 16),
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: state.ingredients.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (context, index) {
-            final ingredient = state.ingredients[index];
-            final isChecked = state.checkedIngredients[index];
-
-            return GestureDetector(
-              onTap: () {
-                context.read<RecipeDetailBloc>().add(ToggleIngredientCheck(index));
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isChecked ? const Color(0xFFF47B20).withValues(alpha: 0.3) : const Color(0xFFEFEBE4),
-                    width: 1.0,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    // Rounded Custom Checkbox
-                    Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.rectangle,
-                        borderRadius: BorderRadius.circular(6),
-                        color: isChecked ? const Color(0xFFF47B20) : Colors.transparent,
-                        border: Border.all(
-                          color: isChecked ? const Color(0xFFF47B20) : const Color(0xFFB5B3B0),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: isChecked
-                          ? const Icon(
-                              Icons.check_rounded,
-                              color: Colors.white,
-                              size: 14,
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 12),
-                    // Ingredient Title (strike-through when checked)
-                    Expanded(
-                      child: Text(
-                        ingredient,
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: isChecked ? const Color(0xFFB5B3B0) : const Color(0xFF1F1E1C),
-                          decoration: isChecked ? TextDecoration.lineThrough : TextDecoration.none,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
+        // Staggered animated ingredient list
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: ListView.separated(
+            key: ValueKey(state.ingredients.length),
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: state.ingredients.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              return AnimatedIngredientTile(
+                ingredient: state.ingredients[index],
+                isChecked: state.checkedIngredients[index],
+                entryDelay: Duration(milliseconds: index * 70),
+                onToggle: () {
+                  context.read<RecipeDetailBloc>().add(ToggleIngredientCheck(index));
+                },
+              );
+            },
+          ),
         ),
       ],
     );
@@ -602,13 +650,15 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         top: false,
         child: Row(
           children: [
-            // Save for Later Button
+            // ── Animated Save / Bookmark Button ──────────────────────────────
             SizedBox(
               height: 52,
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(
-                    color: state.isFavorite ? const Color(0xFFF47B20) : const Color(0xFFEFEBE4),
+                    color: state.isFavorite
+                        ? const Color(0xFFF47B20)
+                        : const Color(0xFFEFEBE4),
                     width: 1.5,
                   ),
                   shape: RoundedRectangleBorder(
@@ -621,58 +671,37 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 },
                 child: Row(
                   children: [
-                    Icon(
-                      state.isFavorite
-                          ? Icons.bookmark_rounded
-                          : Icons.bookmark_border_rounded,
-                      color: state.isFavorite ? const Color(0xFFF47B20) : const Color(0xFF8C8A87),
+                    AnimatedFavoriteButton(
+                      isFavorite: state.isFavorite,
+                      useBookmarkIcon: true,
                       size: 20,
+                      onToggle: () {
+                        context.read<RecipeDetailBloc>().add(ToggleFavorite());
+                      },
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      state.isFavorite ? 'Saved' : 'Save',
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 200),
                       style: GoogleFonts.poppins(
-                        color: state.isFavorite ? const Color(0xFFF47B20) : const Color(0xFF1F1E1C),
+                        color: state.isFavorite
+                            ? const Color(0xFFF47B20)
+                            : const Color(0xFF1F1E1C),
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
+                      child: Text(state.isFavorite ? 'Saved' : 'Save'),
                     ),
                   ],
                 ),
               ),
             ),
             const SizedBox(width: 12),
-            // Start Cooking Button
+            // ── Animated Start Cooking Button ──────────────────────────────
             Expanded(
-              child: SizedBox(
-                height: 52,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFF47B20),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 0,
-                  ),
-                  onPressed: () {
-                    context.read<RecipeDetailBloc>().add(StartCooking());
-                  },
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.soup_kitchen_rounded, color: Colors.white, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Start Cooking',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              child: StartCookingButton(
+                onPressed: () {
+                  context.read<RecipeDetailBloc>().add(StartCooking());
+                },
               ),
             ),
           ],

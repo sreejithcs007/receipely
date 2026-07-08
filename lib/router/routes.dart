@@ -23,28 +23,32 @@ part 'routes.g.dart';
 class SplashRoute extends GoRouteData {
   const SplashRoute();
   @override
-  Widget build(BuildContext context, GoRouterState state) => const SplashScreen();
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _fadeThrough(state, const SplashScreen());
 }
 
 @TypedGoRoute<OnboardingRoute>(path: '/onboarding')
 class OnboardingRoute extends GoRouteData {
   const OnboardingRoute();
   @override
-  Widget build(BuildContext context, GoRouterState state) => const OnboardingScreen();
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _fadeThrough(state, const OnboardingScreen());
 }
 
 @TypedGoRoute<LoginRoute>(path: '/login')
 class LoginRoute extends GoRouteData {
   const LoginRoute();
   @override
-  Widget build(BuildContext context, GoRouterState state) => const LoginScreen();
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _fadeThrough(state, const LoginScreen());
 }
 
 @TypedGoRoute<SignUpRoute>(path: '/signup')
 class SignUpRoute extends GoRouteData {
   const SignUpRoute();
   @override
-  Widget build(BuildContext context, GoRouterState state) => const SignUpScreen();
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _fadeThrough(state, const SignUpScreen());
 }
 
 @TypedShellRoute<MainShellRouteData>(
@@ -102,7 +106,8 @@ class RecipeDetailRoute extends GoRouteData {
   final String recipeId;
   const RecipeDetailRoute({required this.recipeId});
   @override
-  Widget build(BuildContext context, GoRouterState state) => RecipeDetailScreen(recipeId: recipeId);
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      _slideUp(state, RecipeDetailScreen(recipeId: recipeId));
 }
 
 @TypedGoRoute<CategoriesRoute>(path: '/categories')
@@ -149,6 +154,77 @@ class NotificationsRoute extends GoRouteData {
   Widget build(BuildContext context, GoRouterState state) =>
       const PlaceholderScreen(title: 'Notifications');
 }
+
+// ── App Transition Builder ─────────────────────────────────────────────────
+
+/// Returns a [CustomTransitionPage] implementing a Material 3 Fade Through
+/// transition (opacity 0→1 combined with a slight scale 0.93→1.0).
+/// Falls back to an instant transition if the system has Reduce Motion enabled.
+CustomTransitionPage<T> _fadeThrough<T>(
+  GoRouterState state,
+  Widget child, {
+  Duration duration = const Duration(milliseconds: 300),
+}) {
+  return CustomTransitionPage<T>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: duration,
+    reverseTransitionDuration: const Duration(milliseconds: 200),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      // Respect system Reduce Motion accessibility setting
+      if (MediaQuery.maybeOf(context)?.disableAnimations == true) {
+        return child;
+      }
+      return FadeTransition(
+        opacity: CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeInOutCubic,
+        ),
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.93, end: 1.0).animate(
+            CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+          ),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
+/// Returns a [CustomTransitionPage] with a shared-axis slide+fade transition
+/// used for navigating into detail screens (recipe, category).
+CustomTransitionPage<T> _slideUp<T>(
+  GoRouterState state,
+  Widget child, {
+  Duration duration = const Duration(milliseconds: 320),
+}) {
+  return CustomTransitionPage<T>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: duration,
+    reverseTransitionDuration: const Duration(milliseconds: 250),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      if (MediaQuery.maybeOf(context)?.disableAnimations == true) {
+        return child;
+      }
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeInOutCubic,
+      );
+      return FadeTransition(
+        opacity: curved,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0.0, 0.04),
+            end: Offset.zero,
+          ).animate(curved),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
 
 // ── Placeholder Layouts and Screens ───────────────────────────────────────
 

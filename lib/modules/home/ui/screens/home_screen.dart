@@ -463,6 +463,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   child: recipe.imageUrl.startsWith('http')
                                       ? CachedNetworkImage(
                                           imageUrl: recipe.imageUrl,
+                                          memCacheWidth: 200,
+                                          memCacheHeight: 200,
                                           fit: BoxFit.cover,
                                           placeholder: (context, url) => Container(
                                             color: const Color(0xFFEFEBE4),
@@ -648,6 +650,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ? Image.asset(resolvedUrl, fit: BoxFit.cover)
                     : CachedNetworkImage(
                         imageUrl: resolvedUrl,
+                        memCacheWidth: 300,
+                        memCacheHeight: 300,
                         fit: BoxFit.cover,
                         placeholder: (context, url) => Container(
                           color: const Color(0xFFEFEBE4),
@@ -816,6 +820,8 @@ class _HomeScreenState extends State<HomeScreen> {
               child: imageUrl.startsWith('http')
                   ? CachedNetworkImage(
                       imageUrl: imageUrl,
+                      memCacheWidth: 800,
+                      memCacheHeight: 800,
                       fit: BoxFit.cover,
                       placeholder: (context, url) => Container(
                         color: const Color(0xFFEFEBE4),
@@ -1123,6 +1129,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: item.imageUrl.startsWith('http')
                         ? CachedNetworkImage(
                             imageUrl: item.imageUrl,
+                            memCacheWidth: 400,
+                            memCacheHeight: 400,
                             fit: BoxFit.cover,
                             placeholder: (context, url) => Container(
                               color: const Color(0xFFEFEBE4),

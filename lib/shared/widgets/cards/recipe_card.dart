@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/dimensions.dart';
 import '../../utils/extension/context_extension.dart';
+import '../buttons/animated_favorite_button.dart';
 import '../loader/shimmer_card.dart';
 
 class RecipeCard extends StatefulWidget {
@@ -15,6 +16,8 @@ class RecipeCard extends StatefulWidget {
   final VoidCallback? onTap;
   final double? width;
   final double height;
+  /// Optional hero tag for image transition to detail screen.
+  final String? heroTag;
 
   const RecipeCard({
     required this.title,
@@ -27,6 +30,7 @@ class RecipeCard extends StatefulWidget {
     this.onTap,
     this.width,
     this.height = 240.0,
+    this.heroTag,
     super.key,
   });
 
@@ -93,23 +97,41 @@ class _RecipeCardState extends State<RecipeCard>
                           top: Radius.circular(Dimensions.radiusLg),
                         ),
                         child: widget.imageUrl.startsWith('http')
-                            ? CachedNetworkImage(
-                                imageUrl: widget.imageUrl,
-                                fit: BoxFit.cover,
-                                placeholder:
-                                    (context, url) => ShimmerCard(
-                                      width: widget.width ?? 170.0,
-                                      height: widget.height - 80.0,
-                                    ),
-                                errorWidget:
-                                    (context, url, error) => Container(
-                                      color: context.grey.c200,
-                                      child: Icon(
-                                        Icons.restaurant_menu,
-                                        color: context.grey.c400,
-                                        size: 32.0,
+                            ? Hero(
+                                tag: widget.heroTag ?? widget.imageUrl,
+                                flightShuttleBuilder: (_, anim, __, ___, ____) =>
+                                    Material(
+                                      color: Colors.transparent,
+                                      child: ClipRRect(
+                                        borderRadius: const BorderRadius.vertical(
+                                          top: Radius.circular(Dimensions.radiusLg),
+                                        ),
+                                        child: CachedNetworkImage(
+                                          imageUrl: widget.imageUrl,
+                                          memCacheWidth: 400,
+                                          memCacheHeight: 400,
+                                          fit: BoxFit.cover,
+                                        ),
                                       ),
                                     ),
+                                child: CachedNetworkImage(
+                                  imageUrl: widget.imageUrl,
+                                  memCacheWidth: 400,
+                                  memCacheHeight: 400,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => ShimmerCard(
+                                    width: widget.width ?? 170.0,
+                                    height: widget.height - 80.0,
+                                  ),
+                                  errorWidget: (context, url, error) => Container(
+                                    color: context.grey.c200,
+                                    child: Icon(
+                                      Icons.restaurant_menu,
+                                      color: context.grey.c400,
+                                      size: 32.0,
+                                    ),
+                                  ),
+                                ),
                               )
                             : Image.asset(
                                 widget.imageUrl,
@@ -155,24 +177,17 @@ class _RecipeCardState extends State<RecipeCard>
                     Positioned(
                       top: Dimensions.space8,
                       right: Dimensions.space8,
-                      child: GestureDetector(
-                        onTap: widget.onFavoriteToggled,
-                        child: Container(
-                          padding: const EdgeInsets.all(Dimensions.space6),
-                          decoration: BoxDecoration(
-                            color: context.white.c50.withValues(alpha: 0.9),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            widget.isFavorite
-                                ? Icons.bookmark
-                                : Icons.bookmark_border,
-                            color:
-                                widget.isFavorite
-                                    ? context.primary.c500
-                                    : context.grey.c600,
-                            size: 16.0,
-                          ),
+                      child: Container(
+                        padding: const EdgeInsets.all(Dimensions.space6),
+                        decoration: BoxDecoration(
+                          color: context.white.c50.withValues(alpha: 0.9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: AnimatedFavoriteButton(
+                          isFavorite: widget.isFavorite,
+                          useBookmarkIcon: true,
+                          size: 16.0,
+                          onToggle: widget.onFavoriteToggled ?? () {},
                         ),
                       ),
                     ),

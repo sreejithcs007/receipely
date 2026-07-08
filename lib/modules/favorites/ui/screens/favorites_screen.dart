@@ -304,6 +304,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           child: item.imageUrl.startsWith('http')
                               ? CachedNetworkImage(
                                   imageUrl: item.imageUrl,
+                                  memCacheWidth: 400,
+                                  memCacheHeight: 400,
                                   fit: BoxFit.cover,
                                   placeholder: (context, url) => Container(
                                     color: const Color(0xFFEFEBE4),
