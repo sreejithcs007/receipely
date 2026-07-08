@@ -11,6 +11,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SignInWithEmailAndPasswordRequested>(_onSignInRequested);
     on<SignUpWithEmailAndPasswordRequested>(_onSignUpRequested);
     on<SignOutRequested>(_onSignOutRequested);
+    on<SignInWithOAuthRequested>(_onSignInWithOAuthRequested);
   }
 
   Future<void> _onAuthCheckRequested(AuthCheckRequested event, Emitter<AuthState> emit) async {
@@ -63,6 +64,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       await _userRepository.signOut();
       emit(Unauthenticated());
+    } catch (e) {
+      emit(AuthFailure(e.toString()));
+    }
+  }
+
+  Future<void> _onSignInWithOAuthRequested(
+    SignInWithOAuthRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      final success = await _userRepository.signInWithOAuth(event.provider);
+      if (success) {
+        // OAuth redirection initiated successfully
+      } else {
+        emit(const AuthFailure('OAuth sign in initialization failed.'));
+      }
     } catch (e) {
       emit(AuthFailure(e.toString()));
     }

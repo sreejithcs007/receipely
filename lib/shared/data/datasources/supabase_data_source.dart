@@ -36,6 +36,13 @@ class SupabaseDataSource {
     await _client.auth.signOut();
   }
 
+  Future<bool> signInWithOAuth(OAuthProvider provider, {String? redirectTo}) async {
+    return await _client.auth.signInWithOAuth(
+      provider,
+      redirectTo: redirectTo ?? 'receipely://login-callback',
+    );
+  }
+
   User? getCurrentUser() {
     return _client.auth.currentUser;
   }

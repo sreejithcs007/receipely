@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
+
 abstract class AuthEvent extends Equatable {
   const AuthEvent();
 
@@ -35,3 +37,12 @@ class SignUpWithEmailAndPasswordRequested extends AuthEvent {
 }
 
 class SignOutRequested extends AuthEvent {}
+
+class SignInWithOAuthRequested extends AuthEvent {
+  final OAuthProvider provider;
+
+  const SignInWithOAuthRequested(this.provider);
+
+  @override
+  List<Object?> get props => [provider];
+}

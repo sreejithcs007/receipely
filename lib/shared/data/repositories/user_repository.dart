@@ -20,6 +20,10 @@ class UserRepository {
     await _dataSource.signOut();
   }
 
+  Future<bool> signInWithOAuth(OAuthProvider provider, {String? redirectTo}) async {
+    return await _dataSource.signInWithOAuth(provider, redirectTo: redirectTo);
+  }
+
   User? getCurrentUser() {
     return _dataSource.getCurrentUser();
   }

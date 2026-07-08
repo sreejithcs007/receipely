@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import '../../../../router/routes.dart';
 import '../../../../shared/core/constants/asset_constants.dart';
 import '../../../../shared/di/service_locator.dart';
@@ -226,7 +227,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         icon: Image.asset(AppImages.googleIcon, height: 24,
                             errorBuilder: (_, __, ___) =>
                                 const Icon(Icons.g_mobiledata, size: 24)),
-                        onPressed: () {},
+                        onPressed: () {
+                          context.read<AuthBloc>().add(
+                            const SignInWithOAuthRequested(OAuthProvider.google),
+                          );
+                        },
                       ),
                       const SizedBox(height: 12),
 
@@ -235,7 +240,21 @@ class _LoginScreenState extends State<LoginScreen> {
                         icon: Image.asset(AppImages.appleIcon, height: 24,
                             errorBuilder: (_, __, ___) =>
                                 const Icon(Icons.apple, size: 24, color: Color(0xFF1F1E1C))),
-                        onPressed: () {},
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Sign in with Apple is coming soon! Please use Google or Email sign-in for now.',
+                                style: GoogleFonts.poppins(color: Colors.white),
+                              ),
+                              backgroundColor: const Color(0xFF1F1E1C),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          );
+                        },
                       ),
 
                       const SizedBox(height: 28),
