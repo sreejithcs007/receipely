@@ -51,3 +51,6 @@ class GoToStep extends RecipeDetailEvent {
   List<Object?> get props => [step];
 }
 
+class ToggleSave extends RecipeDetailEvent {}
+
+

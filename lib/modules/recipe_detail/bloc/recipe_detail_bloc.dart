@@ -3,13 +3,18 @@ import '../../../../shared/data/repositories/recipe_repository.dart';
 import '../../../../shared/data/repositories/user_repository.dart';
 import 'recipe_detail_event.dart';
 import 'recipe_detail_state.dart';
+import '../../../../shared/services/storage_service.dart';
+import '../../../../shared/di/service_locator.dart';
 
 class RecipeDetailBloc extends Bloc<RecipeDetailEvent, RecipeDetailState> {
   final RecipeRepository _recipeRepository;
   final UserRepository _userRepository;
+  final StorageService _storageService;
 
-  RecipeDetailBloc(this._recipeRepository, this._userRepository)
-      : super(const RecipeDetailState(
+  RecipeDetailBloc(this._recipeRepository, this._userRepository,
+      {StorageService? storageService})
+      : _storageService = storageService ?? getIt<StorageService>(),
+        super(const RecipeDetailState(
           recipeId: '',
           title: 'Loading...',
           description: '',
@@ -23,6 +28,7 @@ class RecipeDetailBloc extends Bloc<RecipeDetailEvent, RecipeDetailState> {
           checkedIngredients: [],
           steps: [],
           isFavorite: false,
+          isSaved: false,
           selectedTabIndex: 0,
           isCooking: false,
           currentCookingStep: 0,
@@ -30,6 +36,7 @@ class RecipeDetailBloc extends Bloc<RecipeDetailEvent, RecipeDetailState> {
     on<LoadRecipeDetail>(_onLoadRecipeDetail);
     on<ToggleIngredientCheck>(_onToggleIngredientCheck);
     on<ToggleFavorite>(_onToggleFavorite);
+    on<ToggleSave>(_onToggleSave);
     on<ChangeTab>(_onTabChanged);
     on<StartCooking>(_onStartCooking);
     on<NextStep>(_onNextStep);
@@ -57,6 +64,10 @@ class RecipeDetailBloc extends Bloc<RecipeDetailEvent, RecipeDetailState> {
         isFav = favorites.any((f) => f.id == event.recipeId);
       }
 
+      final savedIdsStr = await _storageService.read('saved_recipe_ids') ?? '';
+      final savedIds = savedIdsStr.split(',').where((id) => id.isNotEmpty).toList();
+      final isSaved = savedIds.contains(event.recipeId);
+
       emit(state.copyWith(
         title: recipe.title,
         description: recipe.description,
@@ -70,6 +81,7 @@ class RecipeDetailBloc extends Bloc<RecipeDetailEvent, RecipeDetailState> {
         checkedIngredients: List.filled(ingredients.length, false),
         steps: steps,
         isFavorite: isFav,
+        isSaved: isSaved,
       ));
     } catch (_) {}
   }
@@ -138,6 +150,26 @@ class RecipeDetailBloc extends Bloc<RecipeDetailEvent, RecipeDetailState> {
   void _onGoToStep(GoToStep event, Emitter<RecipeDetailState> emit) {
     if (event.step >= 0 && event.step < state.steps.length) {
       emit(state.copyWith(currentCookingStep: event.step));
+    }
+  }
+
+  Future<void> _onToggleSave(ToggleSave event, Emitter<RecipeDetailState> emit) async {
+    final nextSavedState = !state.isSaved;
+    emit(state.copyWith(isSaved: nextSavedState));
+    try {
+      final savedIdsStr = await _storageService.read('saved_recipe_ids') ?? '';
+      final savedIds = savedIdsStr.split(',').where((id) => id.isNotEmpty).toList();
+      if (nextSavedState) {
+        if (!savedIds.contains(state.recipeId)) {
+          savedIds.add(state.recipeId);
+        }
+      } else {
+        savedIds.remove(state.recipeId);
+      }
+      await _storageService.write('saved_recipe_ids', savedIds.join(','));
+    } catch (_) {
+      // Rollback on error
+      emit(state.copyWith(isSaved: !nextSavedState));
     }
   }
 }

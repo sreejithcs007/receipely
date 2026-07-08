@@ -588,8 +588,8 @@ class _SearchScreenState extends State<SearchScreen> {
                             OverlayNotification.show(
                               context,
                               message: nextState
-                                  ? 'Saved "${item.title}" for later! ❤️'
-                                  : 'Removed "${item.title}" from saved recipes 💔',
+                                  ? 'Added "${item.title}" to favorites! ❤️'
+                                  : 'Removed "${item.title}" from favorites 💔',
                               type: nextState
                                   ? NotificationType.success
                                   : NotificationType.warning,

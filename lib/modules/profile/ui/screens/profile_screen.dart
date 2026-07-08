@@ -10,6 +10,7 @@ import '../../../../shared/data/repositories/recipe_repository.dart';
 import '../../../../shared/data/repositories/user_repository.dart';
 import '../../../../shared/data/models/recipe_model.dart';
 import '../../../../shared/widgets/loader/shimmer_card.dart';
+import '../../../../shared/services/storage_service.dart';
 import '../../bloc/profile_bloc.dart';
 import '../../bloc/profile_event.dart';
 import '../../bloc/profile_state.dart';
@@ -280,13 +281,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<List<RecipeModel>> _loadLocalSavedRecipes() async {
+    try {
+      final storage = getIt<StorageService>();
+      final savedIdsStr = await storage.read('saved_recipe_ids') ?? '';
+      final savedIds =
+          savedIdsStr.split(',').where((id) => id.isNotEmpty).toList();
+      if (savedIds.isEmpty) return [];
+
+      final recipes = await getIt<RecipeRepository>().getRecipes();
+      return recipes.where((r) => savedIds.contains(r.id)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
   void _showSavedRecipesBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        final user = getIt<UserRepository>().getCurrentUser();
         return Container(
           height: MediaQuery.of(context).size.height * 0.75,
           decoration: const BoxDecoration(
@@ -328,7 +343,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         shape: BoxShape.circle,
                         color: Color(0xFFEFEBE4),
                       ),
-                      child: const Icon(Icons.close_rounded, size: 16, color: Color(0xFF8C8A87)),
+                      child: const Icon(Icons.close_rounded,
+                          size: 16, color: Color(0xFF8C8A87)),
                     ),
                   ),
                 ],
@@ -336,9 +352,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 20),
               Expanded(
                 child: FutureBuilder<List<RecipeModel>>(
-                  future: user != null
-                      ? getIt<UserRepository>().getFavorites(user.id)
-                      : Future.value([]),
+                  future: _loadLocalSavedRecipes(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(

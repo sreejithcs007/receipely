@@ -3,6 +3,8 @@ import '../../../../shared/data/repositories/recipe_repository.dart';
 import '../../../../shared/data/repositories/user_repository.dart';
 import 'profile_event.dart';
 import 'profile_state.dart';
+import '../../../../shared/services/storage_service.dart';
+import '../../../../shared/di/service_locator.dart';
 
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   // ignore: unused_field
@@ -24,20 +26,25 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<TriggerHelpCenter>(_onTriggerHelpCenter);
   }
 
-  Future<void> _onLoadProfilePage(LoadProfilePage event, Emitter<ProfileState> emit) async {
+  Future<void> _onLoadProfilePage(
+      LoadProfilePage event, Emitter<ProfileState> emit) async {
     emit(state.copyWith(isLoading: true));
     try {
       final user = _userRepository.getCurrentUser();
       if (user != null) {
         final profile = await _userRepository.getUserProfile(user.id);
-        final favorites = await _userRepository.getFavorites(user.id);
         final cooked = await _userRepository.getCookedRecipes(user.id);
+
+        final storage = getIt<StorageService>();
+        final savedIdsStr = await storage.read('saved_recipe_ids') ?? '';
+        final savedCount =
+            savedIdsStr.split(',').where((id) => id.isNotEmpty).length;
 
         emit(state.copyWith(
           name: profile.name,
           level: profile.chefLevel,
           imageUrl: profile.avatarUrl,
-          savedCount: favorites.length,
+          savedCount: savedCount,
           cookedCount: cooked.length,
           isLoading: false,
           showHelpBottomSheet: false,

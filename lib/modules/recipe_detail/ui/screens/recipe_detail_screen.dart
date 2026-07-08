@@ -38,7 +38,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   PageController? _cookingPageController;
   bool _showConfetti = false;
-  bool? _lastFavoriteState;
 
   // Image height used for SliverAppBar – slightly over-expanded for parallax
   static const double _kHeaderExpandedHeight = 340.0;
@@ -139,8 +138,7 @@ $steps
       child: BlocListener<RecipeDetailBloc, RecipeDetailState>(
         listenWhen: (previous, current) =>
             previous.isCooking != current.isCooking ||
-            previous.currentCookingStep != current.currentCookingStep ||
-            previous.isFavorite != current.isFavorite,
+            previous.currentCookingStep != current.currentCookingStep,
         listener: (context, state) {
           if (!state.isCooking) {
             _cookingPageController?.dispose();
@@ -158,22 +156,6 @@ $steps
                 curve: Curves.easeInOutCubic,
               );
             }
-          }
-
-          if (state.title != 'Loading...') {
-            if (_lastFavoriteState != null &&
-                _lastFavoriteState != state.isFavorite) {
-              OverlayNotification.show(
-                context,
-                message: state.isFavorite
-                    ? 'Saved "${state.title}" for later! ❤️'
-                    : 'Removed "${state.title}" from saved recipes 💔',
-                type: state.isFavorite
-                    ? NotificationType.success
-                    : NotificationType.warning,
-              );
-            }
-            _lastFavoriteState = state.isFavorite;
           }
         },
         child: BlocBuilder<RecipeDetailBloc, RecipeDetailState>(
@@ -417,7 +399,17 @@ $steps
                           activeColor: const Color(0xFFEA4335),
                           size: 20,
                           onToggle: () {
+                            final nextState = !state.isFavorite;
                             context.read<RecipeDetailBloc>().add(ToggleFavorite());
+                            OverlayNotification.show(
+                              context,
+                              message: nextState
+                                  ? 'Added "${state.title}" to favorites! ❤️'
+                                  : 'Removed "${state.title}" from favorites 💔',
+                              type: nextState
+                                  ? NotificationType.success
+                                  : NotificationType.warning,
+                            );
                           },
                         ),
                       ),
@@ -779,7 +771,7 @@ $steps
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(
-                    color: state.isFavorite
+                    color: state.isSaved
                         ? const Color(0xFFF47B20)
                         : const Color(0xFFEFEBE4),
                     width: 1.5,
@@ -790,29 +782,37 @@ $steps
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                 ),
                 onPressed: () {
-                  context.read<RecipeDetailBloc>().add(ToggleFavorite());
+                  final nextState = !state.isSaved;
+                  context.read<RecipeDetailBloc>().add(ToggleSave());
+                  OverlayNotification.show(
+                    context,
+                    message: nextState
+                        ? 'Saved "${state.title}" for later! 📌'
+                        : 'Removed "${state.title}" from saved recipes 💔',
+                    type: nextState
+                        ? NotificationType.success
+                        : NotificationType.warning,
+                  );
                 },
                 child: Row(
                   children: [
                     AnimatedFavoriteButton(
-                      isFavorite: state.isFavorite,
+                      isFavorite: state.isSaved,
                       useBookmarkIcon: true,
                       size: 20,
-                      onToggle: () {
-                        context.read<RecipeDetailBloc>().add(ToggleFavorite());
-                      },
+                      onToggle: () {}, // Handled by outer OutlinedButton
                     ),
                     const SizedBox(width: 8),
                     AnimatedDefaultTextStyle(
                       duration: const Duration(milliseconds: 200),
                       style: GoogleFonts.poppins(
-                        color: state.isFavorite
+                        color: state.isSaved
                             ? const Color(0xFFF47B20)
                             : const Color(0xFF1F1E1C),
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
-                      child: Text(state.isFavorite ? 'Saved' : 'Save'),
+                      child: Text(state.isSaved ? 'Saved' : 'Save'),
                     ),
                   ],
                 ),

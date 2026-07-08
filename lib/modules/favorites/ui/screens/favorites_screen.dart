@@ -355,7 +355,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                             OverlayNotification.show(
                               context,
                               message:
-                                  'Removed "${item.title}" from saved recipes 💔',
+                                  'Removed "${item.title}" from favorites 💔',
                               type: NotificationType.warning,
                             );
                           },

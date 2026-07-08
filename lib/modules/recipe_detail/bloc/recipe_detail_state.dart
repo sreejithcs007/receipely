@@ -14,6 +14,7 @@ class RecipeDetailState extends Equatable {
   final List<bool> checkedIngredients;
   final List<String> steps;
   final bool isFavorite;
+  final bool isSaved;
   final int selectedTabIndex;
   final bool isCooking;
   final int currentCookingStep;
@@ -32,6 +33,7 @@ class RecipeDetailState extends Equatable {
     required this.checkedIngredients,
     required this.steps,
     required this.isFavorite,
+    required this.isSaved,
     required this.selectedTabIndex,
     required this.isCooking,
     required this.currentCookingStep,
@@ -51,6 +53,7 @@ class RecipeDetailState extends Equatable {
     List<bool>? checkedIngredients,
     List<String>? steps,
     bool? isFavorite,
+    bool? isSaved,
     int? selectedTabIndex,
     bool? isCooking,
     int? currentCookingStep,
@@ -69,6 +72,7 @@ class RecipeDetailState extends Equatable {
       checkedIngredients: checkedIngredients ?? this.checkedIngredients,
       steps: steps ?? this.steps,
       isFavorite: isFavorite ?? this.isFavorite,
+      isSaved: isSaved ?? this.isSaved,
       selectedTabIndex: selectedTabIndex ?? this.selectedTabIndex,
       isCooking: isCooking ?? this.isCooking,
       currentCookingStep: currentCookingStep ?? this.currentCookingStep,
@@ -90,6 +94,7 @@ class RecipeDetailState extends Equatable {
         checkedIngredients,
         steps,
         isFavorite,
+        isSaved,
         selectedTabIndex,
         isCooking,
         currentCookingStep,

@@ -1210,8 +1210,8 @@ class _HomeScreenState extends State<HomeScreen>
                   OverlayNotification.show(
                     context,
                     message: nextState
-                        ? 'Saved "${recipe.title}" for later! ❤️'
-                        : 'Removed "${recipe.title}" from saved recipes 💔',
+                        ? 'Added "${recipe.title}" to favorites! ❤️'
+                        : 'Removed "${recipe.title}" from favorites 💔',
                     type: nextState
                         ? NotificationType.success
                         : NotificationType.warning,
@@ -1477,8 +1477,8 @@ class _HomeScreenState extends State<HomeScreen>
                       OverlayNotification.show(
                         context,
                         message: nextState
-                            ? 'Saved "${item.title}" for later! ❤️'
-                            : 'Removed "${item.title}" from saved recipes 💔',
+                            ? 'Added "${item.title}" to favorites! ❤️'
+                            : 'Removed "${item.title}" from favorites 💔',
                         type: nextState
                             ? NotificationType.success
                             : NotificationType.warning,
