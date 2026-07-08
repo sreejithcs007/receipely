@@ -8,6 +8,7 @@ import '../../../../shared/widgets/loader/shimmer_card.dart';
 import '../../../../shared/di/service_locator.dart';
 import '../../../../shared/data/repositories/recipe_repository.dart';
 import '../../../../shared/data/repositories/user_repository.dart';
+import '../../../../shared/services/notification_service.dart';
 import '../../bloc/search_bloc.dart';
 import '../../bloc/search_event.dart';
 import '../../bloc/search_state.dart';
@@ -579,7 +580,20 @@ class _SearchScreenState extends State<SearchScreen> {
                         right: 10,
                         child: GestureDetector(
                           onTap: () {
-                            context.read<SearchBloc>().add(ToggleFavoriteRecipeSearchResult(item.id));
+                            final isFav =
+                                state.favoriteRecipeIds.contains(item.id);
+                            final nextState = !isFav;
+                            context.read<SearchBloc>().add(
+                                ToggleFavoriteRecipeSearchResult(item.id));
+                            OverlayNotification.show(
+                              context,
+                              message: nextState
+                                  ? 'Saved "${item.title}" for later! ❤️'
+                                  : 'Removed "${item.title}" from saved recipes 💔',
+                              type: nextState
+                                  ? NotificationType.success
+                                  : NotificationType.warning,
+                            );
                           },
                           child: Container(
                             width: 28,

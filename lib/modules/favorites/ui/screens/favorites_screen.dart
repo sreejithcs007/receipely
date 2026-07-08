@@ -350,7 +350,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         right: 10,
                         child: GestureDetector(
                           onTap: () {
-                            context.read<FavoritesBloc>().add(ToggleFavoriteItemState(item.id));
+                            context.read<FavoritesBloc>().add(
+                                ToggleFavoriteItemState(item.id));
+                            OverlayNotification.show(
+                              context,
+                              message:
+                                  'Removed "${item.title}" from saved recipes 💔',
+                              type: NotificationType.warning,
+                            );
                           },
                           child: Container(
                             width: 28,

@@ -1205,7 +1205,17 @@ class _HomeScreenState extends State<HomeScreen>
             child: InkWell(
               onTap: () {
                 if (recipe != null) {
+                  final nextState = !isFavorited;
                   context.read<HomeBloc>().add(ToggleFavoriteRecipe(recipe.id));
+                  OverlayNotification.show(
+                    context,
+                    message: nextState
+                        ? 'Saved "${recipe.title}" for later! ❤️'
+                        : 'Removed "${recipe.title}" from saved recipes 💔',
+                    type: nextState
+                        ? NotificationType.success
+                        : NotificationType.warning,
+                  );
                 }
               },
               child: Container(
@@ -1462,7 +1472,17 @@ class _HomeScreenState extends State<HomeScreen>
                   right: 12,
                   child: GestureDetector(
                     onTap: () {
+                      final nextState = !item.isFavorited;
                       context.read<HomeBloc>().add(ToggleFavoriteRecipe(item.id));
+                      OverlayNotification.show(
+                        context,
+                        message: nextState
+                            ? 'Saved "${item.title}" for later! ❤️'
+                            : 'Removed "${item.title}" from saved recipes 💔',
+                        type: nextState
+                            ? NotificationType.success
+                            : NotificationType.warning,
+                      );
                     },
                     child: Container(
                       width: 32,

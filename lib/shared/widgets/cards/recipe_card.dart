@@ -185,7 +185,8 @@ class _RecipeCardState extends State<RecipeCard>
                         ),
                         child: AnimatedFavoriteButton(
                           isFavorite: widget.isFavorite,
-                          useBookmarkIcon: true,
+                          useBookmarkIcon: false,
+                          activeColor: const Color(0xFFEA4335),
                           size: 16.0,
                           onToggle: widget.onFavoriteToggled ?? () {},
                         ),

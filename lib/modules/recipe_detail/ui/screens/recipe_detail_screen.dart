@@ -166,8 +166,8 @@ $steps
               OverlayNotification.show(
                 context,
                 message: state.isFavorite
-                    ? 'Added "${state.title}" to your favorites! ❤️'
-                    : 'Removed "${state.title}" from favorites 💔',
+                    ? 'Saved "${state.title}" for later! ❤️'
+                    : 'Removed "${state.title}" from saved recipes 💔',
                 type: state.isFavorite
                     ? NotificationType.success
                     : NotificationType.warning,
@@ -413,7 +413,8 @@ $steps
                       child: Center(
                         child: AnimatedFavoriteButton(
                           isFavorite: state.isFavorite,
-                          useBookmarkIcon: true,
+                          useBookmarkIcon: false,
+                          activeColor: const Color(0xFFEA4335),
                           size: 20,
                           onToggle: () {
                             context.read<RecipeDetailBloc>().add(ToggleFavorite());
