@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../shared/widgets/loader/shimmer_card.dart';
 import '../../../../shared/core/constants/asset_constants.dart';
 import '../../../../shared/di/service_locator.dart';
 import '../../../../shared/data/repositories/recipe_repository.dart';
 import '../../../../shared/data/repositories/user_repository.dart';
+import '../../../../shared/services/haptic_service.dart';
 import '../../../../shared/widgets/buttons/animated_favorite_button.dart';
 import '../../../../shared/widgets/buttons/animated_press_button.dart';
 import '../../../../shared/widgets/tabs/animated_tab_bar.dart';
@@ -49,9 +51,47 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     if (shouldShowTitle != _showFloatingTitle) {
       setState(() => _showFloatingTitle = shouldShowTitle);
     }
+  }
 
-    // Bottom CTA: always visible once loaded
-    // (will drive a slide-in transition from hidden on first load)
+  /// Builds a rich share text and triggers the native OS share sheet.
+  void _shareRecipe(RecipeDetailState state) {
+    HapticService.medium();
+
+    final ingredients = state.ingredients
+        .asMap()
+        .entries
+        .map((e) => '  ${e.key + 1}. ${e.value}')
+        .join('\n');
+
+    final steps = state.steps
+        .asMap()
+        .entries
+        .map((e) => '  Step ${e.key + 1}: ${e.value}')
+        .join('\n');
+
+    final shareText = '''
+🍽️ ${state.title}
+
+${state.description}
+
+⭐ Rating: ${state.rating} (${state.reviews} reviews)
+⏱️ Cook Time: ${state.cookTime}
+🔥 Calories: ${state.calories}
+👥 Servings: ${state.servings}
+
+📋 Ingredients (${state.ingredients.length} items):
+$ingredients
+
+👨‍🍳 Steps:
+$steps
+
+✨ Found on Recipely — Your Premium Recipe App
+    '''.trim();
+
+    Share.share(
+      shareText,
+      subject: '${state.title} — Recipe from Recipely',
+    );
   }
 
   @override
@@ -304,21 +344,24 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     ),
                     const SizedBox(width: 8),
                     // Share
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _showFloatingTitle
-                            ? const Color(0xFFF5F3EE)
-                            : Colors.white,
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.share_outlined,
-                          color: Color(0xFF1F1E1C),
-                          size: 20,
+                    GestureDetector(
+                      onTap: () => _shareRecipe(state),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _showFloatingTitle
+                              ? const Color(0xFFF5F3EE)
+                              : Colors.white,
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.share_outlined,
+                            color: Color(0xFF1F1E1C),
+                            size: 20,
+                          ),
                         ),
                       ),
                     ),
