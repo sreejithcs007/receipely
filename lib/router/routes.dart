@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import '../shared/services/haptic_service.dart';
 import '../modules/splash/ui/screens/splash_screen.dart';
 import '../modules/onboarding/ui/screens/onboarding_screen.dart';
 import '../modules/auth/ui/screens/login_screen.dart';
@@ -226,7 +227,101 @@ CustomTransitionPage<T> _slideUp<T>(
 }
 
 
+class BottomTabIcon extends StatefulWidget {
+  final IconData icon;
+  final IconData inactiveIcon;
+  final bool isSelected;
+  final Color color;
+
+  const BottomTabIcon({
+    required this.icon,
+    required this.inactiveIcon,
+    required this.isSelected,
+    required this.color,
+    super.key,
+  });
+
+  @override
+  State<BottomTabIcon> createState() => _BottomTabIconState();
+}
+
+class _BottomTabIconState extends State<BottomTabIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+    _scale = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 1.18)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 40,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.18, end: 1.0)
+            .chain(CurveTween(curve: Curves.elasticIn)),
+        weight: 60,
+      ),
+    ]).animate(_controller);
+
+    if (widget.isSelected) {
+      _controller.value = 1.0;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant BottomTabIcon oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isSelected && !oldWidget.isSelected) {
+      _controller.forward(from: 0.0);
+    } else if (!widget.isSelected && oldWidget.isSelected) {
+      _controller.value = 0.0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final disableAnimations =
+        MediaQuery.maybeOf(context)?.disableAnimations == true;
+    if (disableAnimations) {
+      return Icon(
+        widget.isSelected ? widget.icon : widget.inactiveIcon,
+        color: widget.color,
+        size: 24,
+      );
+    }
+
+    return AnimatedBuilder(
+      animation: _scale,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: widget.isSelected ? _scale.value : 1.0,
+          child: child,
+        );
+      },
+      child: Icon(
+        widget.isSelected ? widget.icon : widget.inactiveIcon,
+        color: widget.color,
+        size: 24,
+      ),
+    );
+  }
+}
+
 // ── Placeholder Layouts and Screens ───────────────────────────────────────
+
 
 class MainLayout extends StatefulWidget {
   final Widget child;
@@ -248,7 +343,16 @@ class _MainLayoutState extends State<MainLayout> {
     return 0;
   }
 
-  void _onTap(BuildContext context, int index) {
+  int _getSlotIndex(int index) {
+    if (index == 1) return 1;
+    if (index == 3) return 2;
+    if (index == 4) return 3;
+    return 0;
+  }
+
+  void _onTap(BuildContext context, int index, int currentIndex) {
+    if (index == currentIndex) return;
+    HapticService.selection();
     switch (index) {
       case 0:
         const HomeRoute().go(context);
@@ -275,27 +379,38 @@ class _MainLayoutState extends State<MainLayout> {
     required IconData inactiveIcon,
     required String label,
     required bool isSelected,
+    required int currentIndex,
   }) {
-    final themeColor = isSelected ? const Color(0xFFF47B20) : const Color(0xFF8C8A87);
+    const activeColor = Color(0xFFF47B20);
+    const inactiveColor = Color(0xFF8C8A87);
+    final themeColor = isSelected ? activeColor : inactiveColor;
+
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () => _onTap(context, index),
+        onTap: () => _onTap(context, index, currentIndex),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              isSelected ? icon : inactiveIcon,
+            BottomTabIcon(
+              icon: icon,
+              inactiveIcon: inactiveIcon,
+              isSelected: isSelected,
               color: themeColor,
-              size: 24,
             ),
             const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 10.5,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: themeColor,
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 200),
+              opacity: isSelected ? 1.0 : 0.6,
+              child: AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: GoogleFonts.poppins(
+                  fontSize: 10.5,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: themeColor,
+                ),
+                child: Text(label),
               ),
             ),
           ],
@@ -365,45 +480,85 @@ class _MainLayoutState extends State<MainLayout> {
             ],
           ),
           child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildNavItem(
-                    context,
-                    index: 0,
-                    icon: Icons.home_filled,
-                    inactiveIcon: Icons.home_outlined,
-                    label: 'Home',
-                    isSelected: selectedIndex == 0,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final totalWidth = constraints.maxWidth;
+                final itemWidth = totalWidth / 4;
+                const indicatorWidth = 24.0;
+                final slotIndex = _getSlotIndex(selectedIndex);
+
+                // Position indicator in the center of the active item slot
+                final leftPosition =
+                    slotIndex * itemWidth + (itemWidth - indicatorWidth) / 2;
+
+                return SizedBox(
+                  height: 58,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // Gliding Indicator Line under the selected item
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeInOutCubic,
+                        left: leftPosition,
+                        bottom: 2,
+                        child: Container(
+                          width: indicatorWidth,
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF47B20),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      // Navigation Row
+                      Positioned.fill(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildNavItem(
+                              context,
+                              index: 0,
+                              icon: Icons.home_filled,
+                              inactiveIcon: Icons.home_outlined,
+                              label: 'Home',
+                              isSelected: selectedIndex == 0,
+                              currentIndex: selectedIndex,
+                            ),
+                            _buildNavItem(
+                              context,
+                              index: 1,
+                              icon: Icons.search,
+                              inactiveIcon: Icons.search,
+                              label: 'Search',
+                              isSelected: selectedIndex == 1,
+                              currentIndex: selectedIndex,
+                            ),
+                            _buildNavItem(
+                              context,
+                              index: 3,
+                              icon: Icons.favorite,
+                              inactiveIcon: Icons.favorite_border,
+                              label: 'Favorites',
+                              isSelected: selectedIndex == 3,
+                              currentIndex: selectedIndex,
+                            ),
+                            _buildNavItem(
+                              context,
+                              index: 4,
+                              icon: Icons.person,
+                              inactiveIcon: Icons.person_outline,
+                              label: 'Profile',
+                              isSelected: selectedIndex == 4,
+                              currentIndex: selectedIndex,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  _buildNavItem(
-                    context,
-                    index: 1,
-                    icon: Icons.search,
-                    inactiveIcon: Icons.search,
-                    label: 'Search',
-                    isSelected: selectedIndex == 1,
-                  ),
-                  _buildNavItem(
-                    context,
-                    index: 3,
-                    icon: Icons.favorite,
-                    inactiveIcon: Icons.favorite_border,
-                    label: 'Favorites',
-                    isSelected: selectedIndex == 3,
-                  ),
-                  _buildNavItem(
-                    context,
-                    index: 4,
-                    icon: Icons.person,
-                    inactiveIcon: Icons.person_outline,
-                    label: 'Profile',
-                    isSelected: selectedIndex == 4,
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ),

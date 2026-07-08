@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../../shared/widgets/animations/confetti_celebration.dart';
@@ -16,6 +18,7 @@ import '../../../../shared/widgets/buttons/animated_favorite_button.dart';
 import '../../../../shared/widgets/buttons/animated_press_button.dart';
 import '../../../../shared/widgets/tabs/animated_tab_bar.dart';
 import '../../../../shared/widgets/tiles/animated_ingredient_tile.dart';
+import '../../../../shared/services/wake_lock_helper.dart';
 import '../../../../shared/services/notification_service.dart';
 import '../../bloc/recipe_detail_bloc.dart';
 import '../../bloc/recipe_detail_event.dart';
@@ -39,6 +42,20 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   PageController? _cookingPageController;
   bool _showConfetti = false;
 
+  // Shimmer timer to prevent loading skeleton flash
+  Timer? _shimmerTimer;
+  bool _showShimmer = false;
+
+  // Bottom action bar scroll-driven reveal state
+  bool _showBottomBar = true;
+  double _lastOffset = 0.0;
+
+  // Interactive step timer variables for immersive cooking mode
+  Timer? _stepTimer;
+  int _secondsRemaining = 0;
+  int _totalDurationSeconds = 0;
+  bool _isTimerRunning = false;
+
   // Image height used for SliverAppBar – slightly over-expanded for parallax
   static const double _kHeaderExpandedHeight = 340.0;
   // When scroll reaches this offset the floating title fades in
@@ -48,6 +65,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _shimmerTimer = Timer(const Duration(milliseconds: 150), () {
+      if (mounted) {
+        setState(() => _showShimmer = true);
+      }
+    });
   }
 
   void _onScroll() {
@@ -58,6 +80,14 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     if (shouldShowTitle != _showFloatingTitle) {
       setState(() => _showFloatingTitle = shouldShowTitle);
     }
+
+    // Scroll reveal bottom bar: hide when scrolling down, show when scrolling up
+    if (offset > _lastOffset && offset > 120 && _showBottomBar) {
+      setState(() => _showBottomBar = false);
+    } else if (offset < _lastOffset && !_showBottomBar) {
+      setState(() => _showBottomBar = true);
+    }
+    _lastOffset = offset;
   }
 
   /// Builds a rich share text and triggers the native OS share sheet.
@@ -120,8 +150,70 @@ $steps
   }
 
 
+  void _initTimerForStep(String stepText) {
+    _stepTimer?.cancel();
+    _isTimerRunning = false;
+
+    // Matches numbers followed by min, minute, mins, etc.
+    final regExp = RegExp(r'(\d+)\s*(?:min|minute|mins)');
+    final match = regExp.firstMatch(stepText.toLowerCase());
+
+    if (match != null) {
+      final minutes = int.tryParse(match.group(1) ?? '0') ?? 0;
+      if (minutes > 0) {
+        setState(() {
+          _secondsRemaining = minutes * 60;
+          _totalDurationSeconds = minutes * 60;
+        });
+        return;
+      }
+    }
+
+    setState(() {
+      _secondsRemaining = 0;
+      _totalDurationSeconds = 0;
+    });
+  }
+
+  void _toggleStepTimer() {
+    HapticService.selection();
+    if (_isTimerRunning) {
+      _stepTimer?.cancel();
+      setState(() => _isTimerRunning = false);
+    } else {
+      if (_secondsRemaining <= 0) return;
+      setState(() => _isTimerRunning = true);
+      _stepTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
+        if (_secondsRemaining <= 1) {
+          timer.cancel();
+          HapticService.heavy();
+          setState(() {
+            _secondsRemaining = 0;
+            _isTimerRunning = false;
+          });
+          OverlayNotification.show(
+            context,
+            message: 'Step timer complete! 🔔',
+            type: NotificationType.success,
+          );
+        } else {
+          setState(() {
+            _secondsRemaining--;
+          });
+        }
+      });
+    }
+  }
+
   @override
   void dispose() {
+    _stepTimer?.cancel();
+    releaseWakeLock();
+    _shimmerTimer?.cancel();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _cookingPageController?.dispose();
@@ -143,7 +235,9 @@ $steps
           if (!state.isCooking) {
             _cookingPageController?.dispose();
             _cookingPageController = null;
+            releaseWakeLock();
           } else {
+            requestWakeLock();
             if (_cookingPageController == null) {
               _cookingPageController =
                   PageController(initialPage: state.currentCookingStep);
@@ -165,10 +259,11 @@ $steps
               backgroundColor: const Color(0xFFFAF7F2),
               body: Stack(
                 children: [
-                  SafeArea(
-                    top: false,
-                    child: _buildDetailShimmer(context),
-                  ),
+                  if (_showShimmer)
+                    SafeArea(
+                      top: false,
+                      child: _buildDetailShimmer(context),
+                    ),
                   Positioned(
                     top: MediaQuery.of(context).padding.top + 12,
                     left: 20,
@@ -204,8 +299,31 @@ $steps
                 // ── Main Scroll View with Parallax Header ────────────────
                 CustomScrollView(
                   controller: _scrollController,
-                  physics: const BouncingScrollPhysics(),
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
                   slivers: [
+                    CupertinoSliverRefreshControl(
+                      refreshTriggerPullDistance: 90.0,
+                      refreshIndicatorExtent: 60.0,
+                      onRefresh: () async {
+                        final bloc = context.read<RecipeDetailBloc>();
+                        final future = bloc.stream.first;
+                        bloc.add(LoadRecipeDetail(widget.recipeId));
+                        await future
+                            .timeout(const Duration(seconds: 4))
+                            .catchError((_) => bloc.state);
+                      },
+                      builder: (context, refreshState, pulledExtent,
+                          refreshTriggerPullDistance, refreshIndicatorExtent) {
+                        return PremiumRefreshIndicator(
+                          mode: refreshState,
+                          pulledExtent: pulledExtent,
+                          refreshTriggerPullDistance: refreshTriggerPullDistance,
+                          refreshIndicatorExtent: refreshIndicatorExtent,
+                        );
+                      },
+                    ),
                     // Parallax image header
                     _buildSliverHeader(context, state),
 
@@ -284,7 +402,17 @@ $steps
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  child: _buildBottomBar(context, state),
+                  child: AnimatedSlide(
+                    offset: _showBottomBar ? Offset.zero : const Offset(0.0, 1.0),
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOutCubic,
+                    child: AnimatedOpacity(
+                      opacity: _showBottomBar ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOutCubic,
+                      child: _buildBottomBar(context, state),
+                    ),
+                  ),
                 ),
 
                 // ── Full-screen Cooking Guide Overlay ────────────────────
@@ -465,83 +593,98 @@ $steps
         ],
         background: ClipRRect(
           borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // ── Parallax Image ────────────────────────────────────────────
-              state.imageUrl.startsWith('http')
-                  ? Hero(
-                      tag: state.imageUrl,
-                      flightShuttleBuilder: (_, anim, __, ___, ____) => Material(
-                        color: Colors.transparent,
-                        child: ClipRRect(
-                          borderRadius:
-                              const BorderRadius.vertical(bottom: Radius.circular(32)),
-                          child: CachedNetworkImage(
-                            imageUrl: state.imageUrl,
-                            memCacheWidth: 1000,
-                            memCacheHeight: 1000,
+          child: AnimatedBuilder(
+            animation: _scrollController,
+            builder: (context, child) {
+              double scrollY = 0.0;
+              if (_scrollController.hasClients) {
+                scrollY = _scrollController.offset;
+              }
+              // Parallax factor
+              double parallaxOffset = scrollY > 0 ? scrollY * 0.45 : 0.0;
+              return Transform.translate(
+                offset: Offset(0, parallaxOffset),
+                child: child,
+              );
+            },
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // ── Parallax Image ────────────────────────────────────────────
+                state.imageUrl.startsWith('http')
+                    ? Hero(
+                        tag: state.imageUrl,
+                        flightShuttleBuilder: (_, anim, __, ___, ____) => Material(
+                          color: Colors.transparent,
+                          child: ClipRRect(
+                            borderRadius:
+                                const BorderRadius.vertical(bottom: Radius.circular(32)),
+                            child: CachedNetworkImage(
+                              imageUrl: state.imageUrl,
+                              memCacheWidth: 1000,
+                              memCacheHeight: 1000,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        child: CachedNetworkImage(
+                          imageUrl: state.imageUrl,
+                          memCacheWidth: 1000,
+                          memCacheHeight: 1000,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: const Color(0xFFEFEBE4),
+                          ),
+                          errorWidget: (context, url, error) => Image.asset(
+                            AppImages.recipeRamen,
                             fit: BoxFit.cover,
                           ),
                         ),
-                      ),
-                      child: CachedNetworkImage(
-                        imageUrl: state.imageUrl,
-                        memCacheWidth: 1000,
-                        memCacheHeight: 1000,
+                      )
+                    : Image.asset(
+                        state.imageUrl.isNotEmpty
+                            ? state.imageUrl
+                            : AppImages.recipeRamen,
                         fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: const Color(0xFFEFEBE4),
-                        ),
-                        errorWidget: (context, url, error) => Image.asset(
+                        errorBuilder: (_, __, ___) => Image.asset(
                           AppImages.recipeRamen,
                           fit: BoxFit.cover,
                         ),
                       ),
-                    )
-                  : Image.asset(
-                      state.imageUrl.isNotEmpty
-                          ? state.imageUrl
-                          : AppImages.recipeRamen,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Image.asset(
-                        AppImages.recipeRamen,
-                        fit: BoxFit.cover,
+
+                // ── Gradient overlay top (for status bar readability) ─────────
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: const Alignment(0, 0.35),
+                        colors: [
+                          Colors.black.withValues(alpha: 0.35),
+                          Colors.transparent,
+                        ],
                       ),
                     ),
+                  ),
+                ),
 
-              // ── Gradient overlay top (for status bar readability) ─────────
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: const Alignment(0, 0.35),
-                      colors: [
-                        Colors.black.withValues(alpha: 0.35),
-                        Colors.transparent,
-                      ],
+                // ── Gradient overlay bottom (vanishing into canvas color) ─────
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: const Alignment(0, 0.4),
+                        colors: [
+                          const Color(0xFFFAF7F2).withValues(alpha: 0.5),
+                          Colors.transparent,
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-
-              // ── Gradient overlay bottom (vanishing into canvas color) ─────
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: const Alignment(0, 0.4),
-                      colors: [
-                        const Color(0xFFFAF7F2).withValues(alpha: 0.5),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -701,45 +844,48 @@ $steps
           separatorBuilder: (_, __) => const SizedBox(height: 16),
           itemBuilder: (context, index) {
             final step = state.steps[index];
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Step Badge
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Color(0xFFFFF2D9),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${index + 1}',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFFF47B20),
+            return StaggeredFadeSlide(
+              delay: Duration(milliseconds: index * 70),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Step Badge
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFFFFF2D9),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${index + 1}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFFF47B20),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                // Instruction Text
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: Text(
-                      step,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: const Color(0xFF1F1E1C),
-                        fontWeight: FontWeight.w400,
-                        height: 1.45,
+                  const SizedBox(width: 12),
+                  // Instruction Text
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text(
+                        step,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: const Color(0xFF1F1E1C),
+                          fontWeight: FontWeight.w400,
+                          height: 1.45,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             );
           },
         ),
@@ -840,35 +986,16 @@ $steps
     final isLastStep = stepIndex == totalSteps - 1;
 
     return Container(
-      color: Colors.black.withValues(alpha: 0.5), // Semi-transparent scrim
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Container(
-          height: MediaQuery.of(context).size.height * 0.75,
-          width: double.infinity,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-          ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Swipe/Drag handle helper visual
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEFEBE4),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Title and Close
-              Row(
+      color: const Color(0xFFFAF7F2), // Immersive clean solid background
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
+            // Header bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
@@ -892,86 +1019,237 @@ $steps
                       child: const Icon(
                         Icons.close_rounded,
                         color: Color(0xFF8C8A87),
-                        size: 16,
+                        size: 18,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+            ),
+            const SizedBox(height: 16),
 
-              // Progress Bar
-              ClipRRect(
+            // Progress Bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: LinearProgressIndicator(
                   value: progress,
                   minHeight: 6,
                   backgroundColor: const Color(0xFFF5F3EE),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFF47B20)),
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(Color(0xFFF47B20)),
                 ),
               ),
-              const SizedBox(height: 40),
+            ),
 
-              // Step Detail Card
-              Expanded(
-                child: PageView.builder(
-                  controller: _cookingPageController,
-                  itemCount: totalSteps,
-                  onPageChanged: (index) {
-                    context.read<RecipeDetailBloc>().add(GoToStep(index));
-                    HapticService.selection();
-                  },
-                  itemBuilder: (context, index) {
-                    return Center(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // Giant illustration icon
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Color(0xFFFFF2D9),
-                              ),
-                              child: const Icon(
-                                Icons.restaurant_rounded,
-                                color: Color(0xFFF47B20),
-                                size: 40,
+            // Step PageView
+            Expanded(
+              child: PageView.builder(
+                controller: _cookingPageController,
+                itemCount: totalSteps,
+                onPageChanged: (index) {
+                  context.read<RecipeDetailBloc>().add(GoToStep(index));
+                  HapticService.selection();
+                  _initTimerForStep(state.steps[index]);
+                },
+                itemBuilder: (context, index) {
+                  final stepText = state.steps[index];
+                  // Extract step-specific ingredients
+                  final stepIngredients = state.ingredients.where((ing) {
+                    final cleanIng = ing.toLowerCase();
+                    // Split ingredient text into words, filter out short stop words
+                    final words = cleanIng
+                        .split(RegExp(r'[^a-zA-Z]'))
+                        .where((w) => w.length > 3)
+                        .toList();
+                    if (words.isEmpty) return cleanIng.contains(stepText);
+                    return words.any((w) => stepText.toLowerCase().contains(w));
+                  }).toList();
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Step number circular card
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Color(0xFFFFF2D9),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${index + 1}',
+                              style: GoogleFonts.playfairDisplay(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFF47B20),
                               ),
                             ),
-                            const SizedBox(height: 24),
-                            // Instruction Text
-                            Text(
-                              state.steps[index],
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.poppins(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xFF1F1E1C),
-                                height: 1.5,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-              ),
+                        const SizedBox(height: 28),
 
-              // Button controls
-              Row(
+                        // Instruction Text (large and readable)
+                        Text(
+                          stepText,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF1F1E1C),
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Countdown Timer Widget if parsed from step
+                        if (_totalDurationSeconds > 0) ...[
+                          GestureDetector(
+                            onTap: _toggleStepTimer,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF2D9),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                    color: const Color(0xFFFFE4B3),
+                                    width: 1.0),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      SizedBox(
+                                        width: 32,
+                                        height: 32,
+                                        child: CircularProgressIndicator(
+                                          value: _totalDurationSeconds > 0
+                                              ? _secondsRemaining /
+                                                  _totalDurationSeconds
+                                              : 0.0,
+                                          strokeWidth: 3,
+                                          backgroundColor:
+                                              const Color(0xFFFFE4B3),
+                                          valueColor:
+                                              const AlwaysStoppedAnimation<
+                                                  Color>(Color(0xFFF47B20)),
+                                        ),
+                                      ),
+                                      Icon(
+                                        _isTimerRunning
+                                            ? Icons.pause_rounded
+                                            : Icons.play_arrow_rounded,
+                                        size: 16,
+                                        color: const Color(0xFFF47B20),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    '${(_secondsRemaining ~/ 60).toString().padLeft(2, '0')}:${(_secondsRemaining % 60).toString().padLeft(2, '0')}',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFFF47B20),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    _isTimerRunning ? 'Pause' : 'Start Timer',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFFF47B20),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                        ],
+
+                        // Step-specific ingredients Checklist
+                        if (stepIngredients.isNotEmpty) ...[
+                          Text(
+                            'INGREDIENTS NEEDED',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF8C8A87),
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            alignment: WrapAlignment.center,
+                            children: stepIngredients.map((ing) {
+                              final ingIndex = state.ingredients.indexOf(ing);
+                              final isChecked =
+                                  state.checkedIngredients[ingIndex];
+                              return ChoiceChip(
+                                label: Text(ing),
+                                selected: isChecked,
+                                onSelected: (_) {
+                                  context.read<RecipeDetailBloc>().add(
+                                      ToggleIngredientCheck(ingIndex));
+                                  HapticService.light();
+                                },
+                                selectedColor: const Color(0xFFFFF2D9),
+                                backgroundColor: Colors.white,
+                                checkmarkColor: const Color(0xFFF47B20),
+                                labelStyle: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: isChecked
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
+                                  color: isChecked
+                                      ? const Color(0xFFF47B20)
+                                      : const Color(0xFF1F1E1C),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  side: BorderSide(
+                                    color: isChecked
+                                        ? const Color(0xFFF47B20)
+                                        : const Color(0xFFEFEBE4),
+                                    width: 1.0,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            // Controls bottom button bar
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Row(
                 children: [
-                  // Previous Step button
+                  // Previous button
                   Expanded(
                     child: SizedBox(
                       height: 52,
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFFEFEBE4), width: 1.5),
+                          side: const BorderSide(
+                              color: Color(0xFFEFEBE4), width: 1.5),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -984,7 +1262,9 @@ $steps
                         child: Text(
                           'Previous',
                           style: GoogleFonts.poppins(
-                            color: stepIndex > 0 ? const Color(0xFF1F1E1C) : const Color(0xFFB5B3B0),
+                            color: stepIndex > 0
+                                ? const Color(0xFF1F1E1C)
+                                : const Color(0xFFB5B3B0),
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                           ),
@@ -994,7 +1274,7 @@ $steps
                   ),
                   const SizedBox(width: 12),
 
-                  // Next Step button
+                  // Next Step / Finish button
                   Expanded(
                     child: SizedBox(
                       height: 52,
@@ -1008,8 +1288,9 @@ $steps
                         ),
                         onPressed: () {
                           if (isLastStep) {
-                            // Show beautiful success dialog and complete cooking state
-                            context.read<RecipeDetailBloc>().add(CompleteCooking());
+                            context
+                                .read<RecipeDetailBloc>()
+                                .add(CompleteCooking());
                             setState(() => _showConfetti = true);
                             _showSuccessDialog(context, state.title);
                           } else {
@@ -1029,8 +1310,8 @@ $steps
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -1115,5 +1396,200 @@ $steps
 
   Widget _buildDetailShimmer(BuildContext context) {
     return const DetailShimmer();
+  }
+}
+
+class PremiumRefreshIndicator extends StatefulWidget {
+  final RefreshIndicatorMode mode;
+  final double pulledExtent;
+  final double refreshTriggerPullDistance;
+  final double refreshIndicatorExtent;
+
+  const PremiumRefreshIndicator({
+    required this.mode,
+    required this.pulledExtent,
+    required this.refreshTriggerPullDistance,
+    required this.refreshIndicatorExtent,
+    super.key,
+  });
+
+  @override
+  State<PremiumRefreshIndicator> createState() =>
+      _PremiumRefreshIndicatorState();
+}
+
+class _PremiumRefreshIndicatorState extends State<PremiumRefreshIndicator>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _rotationController;
+  RefreshIndicatorMode? _lastMode;
+  bool _hapticTriggered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _rotationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _rotationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant PremiumRefreshIndicator oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (widget.mode != _lastMode) {
+      if (widget.mode == RefreshIndicatorMode.armed && !_hapticTriggered) {
+        HapticService.medium();
+        _hapticTriggered = true;
+      }
+      if (widget.mode == RefreshIndicatorMode.refresh) {
+        _hapticTriggered = false;
+      }
+      if (widget.mode == RefreshIndicatorMode.done) {
+        HapticService.medium();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          OverlayNotification.show(
+            context,
+            message: 'Recipes Updated',
+            type: NotificationType.success,
+          );
+        });
+      }
+      _lastMode = widget.mode;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final double dragPercentage =
+        (widget.pulledExtent / widget.refreshTriggerPullDistance)
+            .clamp(0.0, 1.0);
+
+    return Container(
+      height: widget.pulledExtent,
+      alignment: Alignment.center,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          if (widget.mode == RefreshIndicatorMode.drag ||
+              widget.mode == RefreshIndicatorMode.armed)
+            Transform.rotate(
+              angle: dragPercentage * 3.1415926535 * 2,
+              child: Transform.scale(
+                scale: 0.8 + (dragPercentage * 0.4),
+                child: const Icon(
+                  Icons.soup_kitchen_rounded,
+                  color: Color(0xFFF47B20),
+                  size: 28,
+                ),
+              ),
+            ),
+          if (widget.mode == RefreshIndicatorMode.refresh)
+            RotationTransition(
+              turns: _rotationController,
+              child: const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF47B20)),
+                ),
+              ),
+            ),
+          if (widget.mode == RefreshIndicatorMode.done)
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.0, end: 1.0),
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.elasticOut,
+              builder: (context, val, child) {
+                return Transform.scale(
+                  scale: val,
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: Color(0xFF4CAF50),
+                    size: 28,
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class StaggeredFadeSlide extends StatefulWidget {
+  final Widget child;
+  final Duration delay;
+
+  const StaggeredFadeSlide({
+    required this.child,
+    required this.delay,
+    super.key,
+  });
+
+  @override
+  State<StaggeredFadeSlide> createState() => _StaggeredFadeSlideState();
+}
+
+class _StaggeredFadeSlideState extends State<StaggeredFadeSlide>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _opacity;
+  late final Animation<Offset> _slide;
+  bool _triggered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+    _opacity = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _slide = Tween<Offset>(
+      begin: const Offset(0.0, 0.2),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_triggered) {
+      _triggered = true;
+      final disableAnimations =
+          MediaQuery.maybeOf(context)?.disableAnimations == true;
+      if (disableAnimations) {
+        _controller.value = 1.0;
+      } else {
+        Future.delayed(widget.delay, () {
+          if (mounted) _controller.forward();
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _opacity,
+      child: SlideTransition(
+        position: _slide,
+        child: widget.child,
+      ),
+    );
   }
 }

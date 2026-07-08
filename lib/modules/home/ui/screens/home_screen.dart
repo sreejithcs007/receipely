@@ -31,26 +31,44 @@ class _HomeScreenState extends State<HomeScreen>
   int _currentFeaturedPageIndex = 0;
   late final PageController _featuredPageController;
   Timer? _autoSlideTimer;
+  Timer? _resumeTimer;
+  bool _isInteracting = false;
 
   @override
   void initState() {
     super.initState();
     _featuredPageController =
-        PageController(viewportFraction: 0.94, initialPage: 0);
+        PageController(viewportFraction: 0.88, initialPage: 5004);
   }
 
-  /// Starts the 3.5-second auto-slide timer.
+  void _onPointerDown() {
+    _isInteracting = true;
+    _autoSlideTimer?.cancel();
+    _resumeTimer?.cancel();
+  }
+
+  void _onPointerUp(int itemCount) {
+    _isInteracting = false;
+    _resumeTimer?.cancel();
+    _resumeTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted && !_isInteracting) {
+        _startAutoSlide(itemCount);
+      }
+    });
+  }
+
+  /// Starts the 5-second auto-slide timer.
   /// Call this once the featured list is available (non-empty).
   void _startAutoSlide(int itemCount) {
     _autoSlideTimer?.cancel();
     if (itemCount <= 1) return;
     _autoSlideTimer =
-        Timer.periodic(const Duration(milliseconds: 3500), (_) {
-      if (!mounted) return;
-      final next = (_currentFeaturedPageIndex + 1) % itemCount;
+        Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted || _isInteracting) return;
+      final nextPage = (_featuredPageController.page?.round() ?? 5004) + 1;
       _featuredPageController.animateToPage(
-        next,
-        duration: const Duration(milliseconds: 500),
+        nextPage,
+        duration: const Duration(milliseconds: 600),
         curve: Curves.easeInOutCubic,
       );
     });
@@ -59,6 +77,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void dispose() {
     _autoSlideTimer?.cancel();
+    _resumeTimer?.cancel();
     _featuredPageController.dispose();
     super.dispose();
   }
@@ -1086,29 +1105,68 @@ class _HomeScreenState extends State<HomeScreen>
         // ── Carousel PageView (max 4 items, auto-slides) ───────────────
         SizedBox(
           height: 320,
-          child: PageView.builder(
-            controller: _featuredPageController,
-            itemCount: displayedRecipes.length,
-            onPageChanged: (index) {
-              setState(() => _currentFeaturedPageIndex = index);
-            },
-            physics: const BouncingScrollPhysics(),
-            itemBuilder: (context, index) {
-              final recipe = displayedRecipes[index];
-              final isFavorited = favoriteRecipeIds.contains(recipe.id);
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                child: GestureDetector(
-                  onTap: () =>
-                      RecipeDetailRoute(recipeId: recipe.id).push(context),
-                  child: _buildFeaturedCard(
-                    context,
-                    recipe,
-                    isFavorited: isFavorited,
-                  ),
-                ),
-              );
-            },
+          child: Listener(
+            onPointerDown: (_) => _onPointerDown(),
+            onPointerUp: (_) => _onPointerUp(displayedRecipes.length),
+            child: PageView.builder(
+              controller: _featuredPageController,
+              onPageChanged: (index) {
+                setState(() => _currentFeaturedPageIndex =
+                    index % displayedRecipes.length);
+              },
+              physics: const BouncingScrollPhysics(),
+              itemBuilder: (context, index) {
+                final recipeIndex = index % displayedRecipes.length;
+                final recipe = displayedRecipes[recipeIndex];
+                final isFavorited = favoriteRecipeIds.contains(recipe.id);
+
+                return AnimatedBuilder(
+                  animation: _featuredPageController,
+                  builder: (context, child) {
+                    double diff = 0.0;
+                    if (_featuredPageController.position.haveDimensions) {
+                      diff = _featuredPageController.page! - index;
+                    } else {
+                      diff = (5004.0 - index);
+                    }
+                    double absDiff = diff.abs().clamp(0.0, 1.0);
+
+                    // Curves.easeOutCubic scaling
+                    double curveValue =
+                        Curves.easeOutCubic.transform(1.0 - absDiff);
+                    double scale = 0.95 + (curveValue * 0.05);
+
+                    // Interpolate shadow values
+                    double shadowAlpha = 0.04 + (curveValue * 0.04);
+                    double blurRadius = 12.0 + (curveValue * 8.0);
+                    double offsetY = 4.0 + (curveValue * 4.0);
+
+                    // Parallax offset (max 10px)
+                    double parallaxOffset = diff * 10.0;
+
+                    return Transform.scale(
+                      scale: scale,
+                      child: GestureDetector(
+                        onTap: () =>
+                            RecipeDetailRoute(recipeId: recipe.id).push(context),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                          child: _buildFeaturedCard(
+                            context,
+                            recipe,
+                            isFavorited: isFavorited,
+                            shadowAlpha: shadowAlpha,
+                            blurRadius: blurRadius,
+                            offsetY: offsetY,
+                            parallaxOffset: parallaxOffset,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ),
         if (displayedRecipes.length > 1) ...[
@@ -1117,16 +1175,20 @@ class _HomeScreenState extends State<HomeScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(
               displayedRecipes.length,
-              (index) => AnimatedContainer(
+              (index) => AnimatedOpacity(
                 duration: const Duration(milliseconds: 250),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: _currentFeaturedPageIndex == index ? 24 : 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(4),
-                  color: _currentFeaturedPageIndex == index
-                      ? const Color(0xFFF47B20)
-                      : const Color(0xFFEFEBE4),
+                opacity: _currentFeaturedPageIndex == index ? 1.0 : 0.5,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: _currentFeaturedPageIndex == index ? 24 : 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    color: _currentFeaturedPageIndex == index
+                        ? const Color(0xFFF47B20)
+                        : const Color(0xFFEFEBE4),
+                  ),
                 ),
               ),
             ),
@@ -1136,7 +1198,15 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildFeaturedCard(BuildContext context, RecipeModel? recipe, {required bool isFavorited}) {
+  Widget _buildFeaturedCard(
+    BuildContext context,
+    RecipeModel? recipe, {
+    required bool isFavorited,
+    double shadowAlpha = 0.08,
+    double blurRadius = 20.0,
+    double offsetY = 8.0,
+    double parallaxOffset = 0.0,
+  }) {
     final title = recipe?.title ?? 'Creamy Garlic\nChicken Pasta';
     final description = recipe?.description ?? 'Rich, creamy, and full of flavor. Ready in under 30 minutes!';
     final cookTime = recipe?.cookTime ?? '30 min';
@@ -1150,39 +1220,46 @@ class _HomeScreenState extends State<HomeScreen>
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF3A2818).withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF3A2818).withValues(alpha: shadowAlpha),
+            blurRadius: blurRadius,
+            offset: Offset(0, offsetY),
           ),
         ],
       ),
       child: Stack(
         children: [
-          // Background Image
+          // Background Image with Parallax Shift
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(24),
-              child: imageUrl.startsWith('http')
-                  ? CachedNetworkImage(
-                      imageUrl: imageUrl,
-                      memCacheWidth: 800,
-                      memCacheHeight: 800,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) =>
-                          const ShimmerImagePlaceholder(),
-                      errorWidget: (context, url, error) => Image.asset(
-                        AppImages.heroBanner,
-                        fit: BoxFit.cover,
-                      ),
-                    )
-                  : Image.asset(
-                      imageUrl.isNotEmpty ? imageUrl : AppImages.heroBanner,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Image.asset(
-                        AppImages.heroBanner,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+              child: Transform.scale(
+                scale: 1.15,
+                child: Transform.translate(
+                  offset: Offset(parallaxOffset, 0),
+                  child: imageUrl.startsWith('http')
+                      ? CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          memCacheWidth: 800,
+                          memCacheHeight: 800,
+                          fit: BoxFit.cover,
+                          fadeInDuration: const Duration(milliseconds: 300),
+                          placeholder: (context, url) =>
+                              const ShimmerImagePlaceholder(),
+                          errorWidget: (context, url, error) => Image.asset(
+                            AppImages.heroBanner,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : Image.asset(
+                          imageUrl.isNotEmpty ? imageUrl : AppImages.heroBanner,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Image.asset(
+                            AppImages.heroBanner,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                ),
+              ),
             ),
           ),
           // Dark Gradient Overlay

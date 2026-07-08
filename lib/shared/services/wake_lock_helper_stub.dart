@@ -1,0 +1,2 @@
+void requestWakeLock() {}
+void releaseWakeLock() {}

@@ -10,7 +10,7 @@ import '../../../../shared/data/repositories/user_repository.dart';
 import '../../bloc/favorites_bloc.dart';
 import '../../bloc/favorites_event.dart';
 import '../../bloc/favorites_state.dart';
-
+import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/services/notification_service.dart';
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -69,7 +69,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     if (state.favorites.isEmpty)
-                                      _buildEmptyState('No favorites yet', 'Bookmark recipes to see them here.')
+                                      EmptyState.favorites(
+                                        onBrowse: () =>
+                                            const HomeRoute().go(context),
+                                      )
                                     else
                                       _buildRecipesGrid(context, state),
                                     const SizedBox(height: 24),
@@ -218,48 +221,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
-  Widget _buildEmptyState(String title, String subtitle) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 80.0),
-        child: Column(
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFFFFF2D9),
-              ),
-              child: const Icon(
-                Icons.bookmark_outline_rounded,
-                color: Color(0xFFF47B20),
-                size: 32,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              title,
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF1F1E1C),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
-                fontSize: 13.5,
-                color: const Color(0xFF8C8A87),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildShimmerGrid() {
     return GridView.builder(

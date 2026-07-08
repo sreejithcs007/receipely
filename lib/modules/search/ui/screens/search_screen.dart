@@ -9,6 +9,7 @@ import '../../../../shared/di/service_locator.dart';
 import '../../../../shared/data/repositories/recipe_repository.dart';
 import '../../../../shared/data/repositories/user_repository.dart';
 import '../../../../shared/services/notification_service.dart';
+import '../../../../shared/widgets/empty_state.dart';
 import '../../bloc/search_bloc.dart';
 import '../../bloc/search_event.dart';
 import '../../bloc/search_state.dart';
@@ -107,8 +108,12 @@ class _SearchScreenState extends State<SearchScreen> {
                                 // Grid Items
                                 if (state.isLoading)
                                   _buildShimmerGrid()
-                                else if (state.results.isEmpty)
-                                  _buildEmptyState()
+                                 else if (state.results.isEmpty)
+                                   EmptyState.search(
+                                     onBrowseAll: () {
+                                       context.read<SearchBloc>().add(const SearchQueryChanged(''));
+                                     },
+                                   )
                                 else
                                   _buildRecipesGrid(context, state),
                               ],
@@ -440,47 +445,7 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 40.0),
-        child: Column(
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFFFFF2D9),
-              ),
-              child: const Icon(
-                Icons.search_off_rounded,
-                color: Color(0xFFF47B20),
-                size: 32,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'No recipes found',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF1F1E1C),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Try checking spelling or adjusting filters',
-              style: GoogleFonts.poppins(
-                fontSize: 13.5,
-                color: const Color(0xFF8C8A87),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildShimmerGrid() {
     return GridView.builder(
