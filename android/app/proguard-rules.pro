@@ -5,3 +5,7 @@
 -keep class io.flutter.view.** { *; }
 -keep class io.flutter.** { *; }
 -keep class io.flutter.plugins.** { *; }
+
+# Ignore missing Google Play Core classes (used by Flutter's deferred components feature)
+-dontwarn com.google.android.play.core.**
+
