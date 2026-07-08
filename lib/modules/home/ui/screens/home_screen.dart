@@ -685,78 +685,98 @@ class _HomeScreenState extends State<HomeScreen>
           maxChildSize: 0.95,
           expand: false,
           builder: (_, scrollController) {
-            return Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFFFAF7F2),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(28),
-                  topRight: Radius.circular(28),
-                ),
-              ),
-              padding:
-                  const EdgeInsets.only(left: 24, right: 24, top: 20, bottom: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Drag handle
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEFEBE4),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+            return BlocBuilder<HomeBloc, HomeState>(
+              builder: (context, homeState) {
+                List<RecipeItem> currentItems = allItems;
+                if (homeState is HomeLoaded) {
+                  currentItems = homeState.trendingRecipes
+                      .map((r) => RecipeItem(
+                            id: r.id,
+                            title: r.title,
+                            imageUrl: r.imageUrl,
+                            rating: r.rating.toString(),
+                            reviews: r.reviews.toString(),
+                            cookTime: r.cookTime,
+                            calories: r.calories,
+                            isFavorited: homeState.favoriteRecipeIds.contains(r.id),
+                          ))
+                      .toList();
+                }
+
+                return Container(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFAF7F2),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(28),
+                      topRight: Radius.circular(28),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  padding: const EdgeInsets.only(
+                      left: 24, right: 24, top: 20, bottom: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Trending Recipes',
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1F1E1C),
+                      // Drag handle
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFEBE4),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       ),
-                      Text(
-                        '${allItems.length} recipes',
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          color: const Color(0xFF8C8A87),
-                          fontWeight: FontWeight.w500,
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Trending Recipes',
+                            style: GoogleFonts.playfairDisplay(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF1F1E1C),
+                            ),
+                          ),
+                          Text(
+                            '${currentItems.length} recipes',
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              color: const Color(0xFF8C8A87),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Expanded(
+                        child: GridView.builder(
+                          controller: scrollController,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 0.72,
+                          ),
+                          itemCount: currentItems.length,
+                          itemBuilder: (ctx, index) {
+                            final item = currentItems[index];
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.pop(dialogContext);
+                                RecipeDetailRoute(recipeId: item.id).push(context);
+                              },
+                              child: _buildTrendingCard(context, item),
+                            );
+                          },
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  Expanded(
-                    child: GridView.builder(
-                      controller: scrollController,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 0.72,
-                      ),
-                      itemCount: allItems.length,
-                      itemBuilder: (ctx, index) {
-                        final item = allItems[index];
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.pop(dialogContext);
-                            RecipeDetailRoute(recipeId: item.id).push(context);
-                          },
-                          child: _buildTrendingCard(ctx, item),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             );
           },
         );
@@ -781,91 +801,102 @@ class _HomeScreenState extends State<HomeScreen>
           maxChildSize: 0.95,
           expand: false,
           builder: (_, scrollController) {
-            return Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFFFAF7F2),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(28),
-                  topRight: Radius.circular(28),
-                ),
-              ),
-              padding: const EdgeInsets.only(
-                  left: 24, right: 24, top: 20, bottom: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Drag handle
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEFEBE4),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+            return BlocBuilder<HomeBloc, HomeState>(
+              builder: (context, homeState) {
+                List<RecipeModel> currentFeatured = allFeatured;
+                List<String> currentFavoriteIds = favoriteRecipeIds;
+                if (homeState is HomeLoaded) {
+                  currentFeatured = homeState.featuredRecipes;
+                  currentFavoriteIds = homeState.favoriteRecipeIds;
+                }
+
+                return Container(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFAF7F2),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(28),
+                      topRight: Radius.circular(28),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  padding: const EdgeInsets.only(
+                      left: 24, right: 24, top: 20, bottom: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Featured Recipes',
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1F1E1C),
+                      // Drag handle
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFEBE4),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       ),
-                      Text(
-                        '${allFeatured.length} recipes',
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          color: const Color(0xFF8C8A87),
-                          fontWeight: FontWeight.w500,
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Featured Recipes',
+                            style: GoogleFonts.playfairDisplay(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF1F1E1C),
+                            ),
+                          ),
+                          Text(
+                            '${currentFeatured.length} recipes',
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              color: const Color(0xFF8C8A87),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      // 2-column grid — same UI as Trending View All
+                      Expanded(
+                        child: GridView.builder(
+                          controller: scrollController,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 0.72,
+                          ),
+                          itemCount: currentFeatured.length,
+                          itemBuilder: (ctx, index) {
+                            final r = currentFeatured[index];
+                            final isFav = currentFavoriteIds.contains(r.id);
+                            // Map RecipeModel -> RecipeItem for the trending card
+                            final item = RecipeItem(
+                              id: r.id,
+                              title: r.title,
+                              imageUrl: r.imageUrl,
+                              rating: r.rating.toStringAsFixed(1),
+                              reviews: r.reviews.toString(),
+                              cookTime: r.cookTime,
+                              calories: r.calories,
+                              isFavorited: isFav,
+                            );
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.pop(dialogContext);
+                                RecipeDetailRoute(recipeId: r.id).push(context);
+                              },
+                              child: _buildTrendingCard(context, item),
+                            );
+                          },
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  // 2-column grid — same UI as Trending View All
-                  Expanded(
-                    child: GridView.builder(
-                      controller: scrollController,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 0.72,
-                      ),
-                      itemCount: allFeatured.length,
-                      itemBuilder: (ctx, index) {
-                        final r = allFeatured[index];
-                        final isFav = favoriteRecipeIds.contains(r.id);
-                        // Map RecipeModel -> RecipeItem for the trending card
-                        final item = RecipeItem(
-                          id: r.id,
-                          title: r.title,
-                          imageUrl: r.imageUrl,
-                          rating: r.rating.toStringAsFixed(1),
-                          reviews: r.reviews.toString(),
-                          cookTime: r.cookTime,
-                          calories: r.calories,
-                          isFavorited: isFav,
-                        );
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.pop(dialogContext);
-                            RecipeDetailRoute(recipeId: r.id).push(context);
-                          },
-                          child: _buildTrendingCard(ctx, item),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             );
           },
         );
