@@ -942,11 +942,13 @@ $steps
                 },
                 child: Row(
                   children: [
-                    AnimatedFavoriteButton(
-                      isFavorite: state.isSaved,
-                      useBookmarkIcon: true,
-                      size: 20,
-                      onToggle: () {}, // Handled by outer OutlinedButton
+                    IgnorePointer(
+                      child: AnimatedFavoriteButton(
+                        isFavorite: state.isSaved,
+                        useBookmarkIcon: true,
+                        size: 20,
+                        onToggle: () {}, // Handled by outer OutlinedButton
+                      ),
                     ),
                     const SizedBox(width: 8),
                     AnimatedDefaultTextStyle(
