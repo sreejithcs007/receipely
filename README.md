@@ -1,163 +1,191 @@
-# Recipely
+<img width="1536" height="1024" alt="ChatGPT Image Jul 9, 2026, 02_32_50 PM" src="https://github.com/user-attachments/assets/6adf37e4-d525-41a7-9f73-7b27e4ef1f67" />
 
-### A hands-free, interactive cooking companion designed for the kitchen environment.
 
-Recipely helps users discover recipes and prepare meals with step-by-step guidance. It replaces static lists with contextual tools that respond to cooking progress and keep screens active when hands are busy.
+# 🍛 Recipely
 
----
+### Modern Recipe Discovery Built with Flutter
 
-## Why Recipely?
+Recipely is a beautifully crafted recipe application built with **Flutter**, **BLoC**, **Clean Architecture**, **Hive**, and **Supabase**. It helps users discover recipes, save favorites, and enjoy an immersive step-by-step cooking experience with a clean, responsive interface.
 
-- **Hands-Free Utility**: Keeps the mobile display active during preparation steps to avoid touching the screen with dirty hands.
-- **Offline-First Synchronization**: Ensures recipe data is cached and available instantly even with spotty kitchen Wi-Fi.
-- **Fluid Motion**: Built with highly responsive, frame-rate optimized scrolling and interface transitions.
-- **Enterprise-Grade Foundation**: Structured using Clean Architecture rules for testability, scalability, and clean boundaries.
+> **Flutter • Clean Architecture • BLoC • Hive • Supabase**
 
 ---
 
-## Features
+# ✨ Why Recipely?
 
-### 🍽 Discovery
-- **Adaptive Carousel**: An infinite-loop recipe slider that pauses on tap and slides naturally to nearby options.
-- **Search & Filters**: A predictive matching system that filters recipes instantly as you type.
-
-### 👨🍳 Cooking Experience
-- **Step-by-Step Cards**: A fullscreen guide that isolates each instruction step to reduce kitchen distractions.
-- **Contextual Active Timers**: In-app timers that extract instruction durations and run countdowns on the step cards.
-- **Active Step Ingredients**: Displays checkboxes showing only the ingredients needed for the active step.
-- **Screen Wake Lock**: Programmatically prevents mobile device screen dimming or sleeping during active cooking.
-
-### ❤️ Personalization
-- **Backend Sync Bookmarks**: Instantly marks favorites and synchronizes saved selections with a cloud backend.
-- **Secondary Bookmarks**: Saves secondary recipe cards locally for quick retrieval.
-
-### ⚡ Performance
-- **Zero-Flicker Preloaders**: Display shimmers with a 150ms delay to hide layout shifts and placeholder flashes on fast networks.
-- **Scroll-Reveal CTAs**: Automatically translates the actions bar downwards during scrolls to focus on instruction content.
-
-### ♿ Accessibility
-- **Reduced Motion Settings**: Disables motion and scales layout transitions instantly if reduced motion is enabled on the device.
-- **Legible Contrast & Sizing**: High contrast text ratios and large tap targets designed to be readable at arm's length.
+- 🍽 Discover curated recipes through an intuitive browsing experience.
+- ❤️ Save and organize your favorite recipes with cloud synchronization.
+- 📖 Follow recipes with an immersive guided cooking interface.
+- 💾 Fast local caching powered by Hive for a responsive experience.
+- 🏗 Built with Clean Architecture for scalability and maintainability.
 
 ---
 
-## Tech Stack
+# 🚀 Features
+
+## 🍽 Discovery
+
+- Infinite featured recipe carousel
+- Smart search with instant filtering
+- Curated recipe collections
+- Beautiful recipe browsing experience
+
+## 👨‍🍳 Cooking Experience
+
+- Immersive step-by-step cooking interface
+- Interactive ingredient checklist
+- Large, readable cooking instructions
+- Wake Lock support to keep the screen awake while cooking
+
+## ❤️ Personalization
+
+- Favorite recipes synchronization with Supabase
+- Save recipes for quick access
+- Personalized cooking experience
+
+## ⚡ Performance
+
+- Smooth scrolling experience
+- Cached network images
+- Shimmer loading placeholders
+- Optimized widget rebuilds
+- Responsive layouts
+
+## ♿ Accessibility
+
+- Reduced Motion support
+- Large touch targets
+- High contrast interface
+- Accessible typography
+
+---
+
+# 🛠 Tech Stack
 
 | Category | Technology |
-| --- | --- |
-| **Frontend** | Flutter SDK (Dart) |
-| **Architecture** | Clean Architecture (Data, Domain, Presentation) |
+|-----------|------------|
+| **Framework** | Flutter & Dart |
+| **Architecture** | Clean Architecture |
 | **State Management** | flutter_bloc |
-| **Backend** | Supabase API |
-| **Database** | PostgreSQL (Supabase) |
-| **Routing** | GoRouter (Typed Routing) |
-| **Local Storage** | Shared Preferences & Custom Key-Value Caching |
-| **Utilities** | get_it, google_fonts, share_plus, shimmer |
-| **Testing** | flutter_test |
+| **Backend** | Supabase |
+| **Database** | PostgreSQL |
+| **Routing** | GoRouter |
+| **Local Storage** | Hive |
+| **Dependency Injection** | get_it |
+| **UI Libraries** | CachedNetworkImage, Shimmer |
+
+
+
+# 🏗 Architecture
+
+Recipely follows **Clean Architecture**, separating the application into **Presentation**, **Domain**, and **Data** layers.
+
+The project is organized using a **feature-first structure**, powered by **BLoC** for predictable state management, **Repository Pattern** for data abstraction, and **Dependency Injection** using `get_it`.
+
+This architecture keeps the codebase modular, testable, and easy to scale.
 
 ---
 
-## Screenshots
+# ⚡ Performance Highlights
 
-| Home & Carousel | Detail & Parallax | Cooking Mode & Timers |
-| --- | --- | --- |
-| `[Placeholder: Home UI]` | `[Placeholder: Detail UI]` | `[Placeholder: Cooking UI]` |
-
----
-
-## Architecture
-
-Recipely uses Clean Architecture separated into Presentation, Domain, and Data layers. It implements the Repository Pattern to decouple backend database implementations from core business logic. Organised following a feature-first folder structure, the app handles dependency injection with a central service locator and uses highly modular, reusable widget tokens. This structure guarantees that features can be scaled, tested, and updated independently.
+- ✅ Optimized widget rebuilds
+- ✅ Cached network images
+- ✅ Smooth 60 FPS animations
+- ✅ Shimmer loading placeholders
+- ✅ Lazy-loaded content
+- ✅ Responsive layouts
+- ✅ Reduced Motion accessibility support
 
 ---
 
-## Performance
+# 🔬 Engineering Highlights
 
-✔ Consistent 60 FPS animations
-
-✔ Smooth, non-blocking scroll mechanics
-
-✔ Minimal widget rebuild cycles
-
-✔ Cached network image structures
-
-✔ Lazy-loaded lists and grids
-
-✔ Reduced motion fallback support
-
-✔ Multi-device responsive screen layouts
-
----
-
-## Engineering Highlights
-
-- **BLoC State Management**: Implements strict unidirectional data flow, mapping synchronous UI inputs to state transitions.
-- **RepaintBoundary Insulation**: Isolates high-frequency paint widgets (like scroll parallax headers and custom pull-to-refresh loaders) to bypass main layout passes.
-- **BlocSelector Optimization**: Prevents parent-level widget rebuilds by building children only when target properties change.
-- **Image Memory Constraints**: Controls cache sizes via `memCacheWidth`/`memCacheHeight` on CachedNetworkImage to prevent out-of-memory errors.
-- **Typed GoRouter**: Leverages code-generated declarative routing to ensure type-safe navigation and deep linking.
-- **Wake Lock Interop**: Conditionally calls Web and VM JS/stub interfaces to keep screen awake without platform crashes.
-- **Staggered Animations**: Manages delay offsets on custom slide-and-fade tiles to create structured list entry flows.
-- **Pull-to-Refresh Controls**: Builds custom Cupertino refreshers with spoon rotation metrics and elastic done checkmarks.
-- **Accessibility Fallbacks**: Detects media query settings to bypass motion animations dynamically under reduced motion profiles.
+- Feature-first project structure
+- Clean Architecture implementation
+- BLoC state management
+- Repository Pattern
+- Typed GoRouter navigation
+- Cached image optimization
+- RepaintBoundary optimization
+- BlocSelector rebuild optimization
+- Staggered animations
+- Custom pull-to-refresh interactions
+- Wake Lock integration
+- Accessibility-aware animations
 
 ---
 
-## Folder Structure
+# 📂 Folder Structure
 
-```
+```text
 lib/
-├── core/                  # Color tokens, themes, global assets, and configurations
-├── router/                # Declared type-safe GoRouter route coordinates
-├── modules/               # Feature-specific modules
-│   └── [feature]/
-│       ├── bloc/          # Presentation managers, event streams, and states
-│       └── ui/            # Responsive screen views and local widgets
-└── shared/                # Cross-cutting layers and reusable components
-    ├── data/              # Database entities, repositories, and models
-    ├── services/          # Storage, haptics, notification, and wake lock helpers
-    └── widgets/           # Global design system buttons, loaders, empty states, and tiles
+├── core/
+├── router/
+├── modules/
+│   └── feature/
+│       ├── bloc/
+│       └── ui/
+├── shared/
+│   ├── data/
+│   ├── services/
+│   └── widgets/
+└── main.dart
 ```
 
 ---
 
-## Getting Started
+# 🚀 Getting Started
 
-### 1. Supabase Configuration
-Execute [full_schema.sql](file:///d:/New%20folder/receipe_flutter/full_schema.sql) in your Supabase SQL Editor.
-Add a `.env` file to the project root:
-```env
-SUPABASE_URL=https://your-project-ref.supabase.co
-SUPABASE_ANON_KEY=your-anon-key
+### Clone the repository
+
+```bash
+git clone <repository-url>
 ```
 
-### 2. Run Commands
+### Install dependencies
+
 ```bash
-# Fetch dependencies
 flutter pub get
+```
 
-# Generate type-safe routes
+### Generate routes
+
+```bash
 flutter pub run build_runner build --delete-conflicting-outputs
+```
 
-# Compile and run the application
+### Configure Supabase
+
+Create a `.env` file:
+
+```env
+SUPABASE_URL=your_supabase_url
+SUPABASE_ANON_KEY=your_supabase_key
+```
+
+Import the provided SQL schema into your Supabase project.
+
+### Run
+
+```bash
 flutter run
 ```
 
 ---
 
-## Future Improvements
+# 🛣 Roadmap
 
-- 🧠 **AI Recipe Recommendations**: On-device machine learning recommendations based on cooking history.
-- 🛒 **Smart Grocery List**: Automatic grocery list aggregation from checked ingredients.
-- 📅 **Interactive Meal Planner**: Drag-and-drop weekly meal schedule with nutrition calculator metrics.
-- 🎙️ **Voice Cooking Assistant**: Hands-free navigation between steps using speech commands.
-- ⌚ **Wear OS Support**: Step checklist and timers synced directly to smartwatches.
+- 🤖 AI recipe recommendations
+- 🛒 Grocery list generation
+- 📅 Weekly meal planner
+- 🎙 Voice-assisted cooking
+- ⌚ Wear OS companion
 
 ---
 
-## About the Developer
 
-* 💼 **LinkedIn**: [LinkedIn Professional Profile](https://linkedin.com)
-* 📁 **GitHub**: [GitHub Developer Profile](https://github.com)
-* 🌐 **Portfolio**: [Portfolio Website](https://example.com)
-* ✉️ **Contact**: [Email Contact Link](mailto:example@example.com)
+## ⭐ Support
+
+If you enjoyed this project or found it useful, consider giving the repository a ⭐.
+
+Contributions, suggestions, and feedback are always welcome.
