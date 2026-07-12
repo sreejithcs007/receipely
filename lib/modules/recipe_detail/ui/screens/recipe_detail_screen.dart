@@ -798,12 +798,13 @@ $steps
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
         // Staggered animated ingredient list
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: ListView.separated(
             key: ValueKey(state.ingredients.length),
+            padding: EdgeInsets.zero,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: state.ingredients.length,
@@ -836,8 +837,9 @@ $steps
             color: const Color(0xFF1F1E1C),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
         ListView.separated(
+          padding: EdgeInsets.zero,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: state.steps.length,
