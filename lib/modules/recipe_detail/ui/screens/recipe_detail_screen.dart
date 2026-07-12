@@ -1071,170 +1071,175 @@ $steps
                     return words.any((w) => stepText.toLowerCase().contains(w));
                   }).toList();
 
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Step number circular card
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Color(0xFFFFF2D9),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '${index + 1}',
-                              style: GoogleFonts.playfairDisplay(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFFF47B20),
+                  return Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24.0, vertical: 16.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Step number circular card
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Color(0xFFFFF2D9),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${index + 1}',
+                                style: GoogleFonts.playfairDisplay(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFFF47B20),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 28),
+                          const SizedBox(height: 28),
 
-                        // Instruction Text (large and readable)
-                        Text(
-                          stepText,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF1F1E1C),
-                            height: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-
-                        // Countdown Timer Widget if parsed from step
-                        if (_totalDurationSeconds > 0) ...[
-                          GestureDetector(
-                            onTap: _toggleStepTimer,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFF2D9),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                    color: const Color(0xFFFFE4B3),
-                                    width: 1.0),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      SizedBox(
-                                        width: 32,
-                                        height: 32,
-                                        child: CircularProgressIndicator(
-                                          value: _totalDurationSeconds > 0
-                                              ? _secondsRemaining /
-                                                  _totalDurationSeconds
-                                              : 0.0,
-                                          strokeWidth: 3,
-                                          backgroundColor:
-                                              const Color(0xFFFFE4B3),
-                                          valueColor:
-                                              const AlwaysStoppedAnimation<
-                                                  Color>(Color(0xFFF47B20)),
-                                        ),
-                                      ),
-                                      Icon(
-                                        _isTimerRunning
-                                            ? Icons.pause_rounded
-                                            : Icons.play_arrow_rounded,
-                                        size: 16,
-                                        color: const Color(0xFFF47B20),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    '${(_secondsRemaining ~/ 60).toString().padLeft(2, '0')}:${(_secondsRemaining % 60).toString().padLeft(2, '0')}',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                      color: const Color(0xFFF47B20),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    _isTimerRunning ? 'Pause' : 'Start Timer',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: const Color(0xFFF47B20),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                          // Instruction Text (large and readable)
+                          Text(
+                            stepText,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF1F1E1C),
+                              height: 1.5,
                             ),
                           ),
                           const SizedBox(height: 32),
-                        ],
 
-                        // Step-specific ingredients Checklist
-                        if (stepIngredients.isNotEmpty) ...[
-                          Text(
-                            'INGREDIENTS NEEDED',
-                            style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF8C8A87),
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            alignment: WrapAlignment.center,
-                            children: stepIngredients.map((ing) {
-                              final ingIndex = state.ingredients.indexOf(ing);
-                              final isChecked =
-                                  state.checkedIngredients[ingIndex];
-                              return ChoiceChip(
-                                label: Text(ing),
-                                selected: isChecked,
-                                onSelected: (_) {
-                                  context.read<RecipeDetailBloc>().add(
-                                      ToggleIngredientCheck(ingIndex));
-                                  HapticService.light();
-                                },
-                                selectedColor: const Color(0xFFFFF2D9),
-                                backgroundColor: Colors.white,
-                                checkmarkColor: const Color(0xFFF47B20),
-                                labelStyle: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  fontWeight: isChecked
-                                      ? FontWeight.w600
-                                      : FontWeight.w500,
-                                  color: isChecked
-                                      ? const Color(0xFFF47B20)
-                                      : const Color(0xFF1F1E1C),
+                          // Countdown Timer Widget if parsed from step
+                          if (_totalDurationSeconds > 0) ...[
+                            GestureDetector(
+                              onTap: _toggleStepTimer,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFF2D9),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                      color: const Color(0xFFFFE4B3),
+                                      width: 1.0),
                                 ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  side: BorderSide(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        SizedBox(
+                                          width: 32,
+                                          height: 32,
+                                          child: CircularProgressIndicator(
+                                            value: _totalDurationSeconds > 0
+                                                ? _secondsRemaining /
+                                                    _totalDurationSeconds
+                                                : 0.0,
+                                            strokeWidth: 3,
+                                            backgroundColor:
+                                                const Color(0xFFFFE4B3),
+                                            valueColor:
+                                                const AlwaysStoppedAnimation<
+                                                    Color>(Color(0xFFF47B20)),
+                                          ),
+                                        ),
+                                        Icon(
+                                          _isTimerRunning
+                                              ? Icons.pause_rounded
+                                              : Icons.play_arrow_rounded,
+                                          size: 16,
+                                          color: const Color(0xFFF47B20),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      '${(_secondsRemaining ~/ 60).toString().padLeft(2, '0')}:${(_secondsRemaining % 60).toString().padLeft(2, '0')}',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFFF47B20),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      _isTimerRunning
+                                          ? 'Pause'
+                                          : 'Start Timer',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFFF47B20),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                          ],
+
+                          // Step-specific ingredients Checklist
+                          if (stepIngredients.isNotEmpty) ...[
+                            Text(
+                              'INGREDIENTS NEEDED',
+                              style: GoogleFonts.poppins(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF8C8A87),
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              alignment: WrapAlignment.center,
+                              children: stepIngredients.map((ing) {
+                                final ingIndex = state.ingredients.indexOf(ing);
+                                final isChecked =
+                                    state.checkedIngredients[ingIndex];
+                                return ChoiceChip(
+                                  label: Text(ing),
+                                  selected: isChecked,
+                                  onSelected: (_) {
+                                    context.read<RecipeDetailBloc>().add(
+                                        ToggleIngredientCheck(ingIndex));
+                                    HapticService.light();
+                                  },
+                                  selectedColor: const Color(0xFFFFF2D9),
+                                  backgroundColor: Colors.white,
+                                  checkmarkColor: const Color(0xFFF47B20),
+                                  labelStyle: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    fontWeight: isChecked
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
                                     color: isChecked
                                         ? const Color(0xFFF47B20)
-                                        : const Color(0xFFEFEBE4),
-                                    width: 1.0,
+                                        : const Color(0xFF1F1E1C),
                                   ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    side: BorderSide(
+                                      color: isChecked
+                                          ? const Color(0xFFF47B20)
+                                          : const Color(0xFFEFEBE4),
+                                      width: 1.0,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   );
                 },
