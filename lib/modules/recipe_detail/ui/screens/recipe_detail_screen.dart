@@ -1059,17 +1059,6 @@ $steps
                 },
                 itemBuilder: (context, index) {
                   final stepText = state.steps[index];
-                  // Extract step-specific ingredients
-                  final stepIngredients = state.ingredients.where((ing) {
-                    final cleanIng = ing.toLowerCase();
-                    // Split ingredient text into words, filter out short stop words
-                    final words = cleanIng
-                        .split(RegExp(r'[^a-zA-Z]'))
-                        .where((w) => w.length > 3)
-                        .toList();
-                    if (words.isEmpty) return cleanIng.contains(stepText);
-                    return words.any((w) => stepText.toLowerCase().contains(w));
-                  }).toList();
 
                   return Center(
                     child: SingleChildScrollView(
@@ -1183,60 +1172,6 @@ $steps
                               ),
                             ),
                             const SizedBox(height: 32),
-                          ],
-
-                          // Step-specific ingredients Checklist
-                          if (stepIngredients.isNotEmpty) ...[
-                            Text(
-                              'INGREDIENTS NEEDED',
-                              style: GoogleFonts.poppins(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF8C8A87),
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              alignment: WrapAlignment.center,
-                              children: stepIngredients.map((ing) {
-                                final ingIndex = state.ingredients.indexOf(ing);
-                                final isChecked =
-                                    state.checkedIngredients[ingIndex];
-                                return ChoiceChip(
-                                  label: Text(ing),
-                                  selected: isChecked,
-                                  onSelected: (_) {
-                                    context.read<RecipeDetailBloc>().add(
-                                        ToggleIngredientCheck(ingIndex));
-                                    HapticService.light();
-                                  },
-                                  selectedColor: const Color(0xFFFFF2D9),
-                                  backgroundColor: Colors.white,
-                                  checkmarkColor: const Color(0xFFF47B20),
-                                  labelStyle: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    fontWeight: isChecked
-                                        ? FontWeight.w600
-                                        : FontWeight.w500,
-                                    color: isChecked
-                                        ? const Color(0xFFF47B20)
-                                        : const Color(0xFF1F1E1C),
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    side: BorderSide(
-                                      color: isChecked
-                                          ? const Color(0xFFF47B20)
-                                          : const Color(0xFFEFEBE4),
-                                      width: 1.0,
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
                           ],
                         ],
                       ),
